@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>生成图标</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+    }
+    canvas {
+      border: 1px solid #ccc;
+      margin: 10px;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Todo Manager 图标生成器</h1>
+  <p>点击下载按钮保存图标文件到 icons 目录</p>
+
+  <div class="container">
+    <div>
+      <canvas id="icon16" width="16" height="16"></canvas>
+      <br><button onclick="downloadIcon('icon16', 'icon16.png')">下载 16x16</button>
+    </div>
+    <div>
+      <canvas id="icon48" width="48" height="48"></canvas>
+      <br><button onclick="downloadIcon('icon48', 'icon48.png')">下载 48x48</button>
+    </div>
+    <div>
+      <canvas id="icon128" width="128" height="128"></canvas>
+      <br><button onclick="downloadIcon('icon128', 'icon128.png')">下载 128x128</button>
+    </div>
+  </div>
+
+  <script>
+    function drawIcon(canvasId, size) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+
+      // 渐变背景
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#667eea');
+      gradient.addColorStop(1, '#764ba2');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+
+      // 绘制复选框图标
+      ctx.strokeStyle = 'white';
+      ctx.fillStyle = 'white';
+      ctx.lineWidth = size / 16;
+
+      // 方框
+      const boxSize = size * 0.5;
+      const boxX = (size - boxSize) / 2;
+      const boxY = (size - boxSize) / 2;
+      ctx.strokeRect(boxX, boxY, boxSize, boxSize);
+
+      // 对勾
+      ctx.beginPath();
+      ctx.lineWidth = size / 12;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      const checkX = boxX + boxSize * 0.2;
+      const checkY = boxY + boxSize * 0.5;
+      ctx.moveTo(checkX, checkY);
+      ctx.lineTo(boxX + boxSize * 0.4, boxY + boxSize * 0.7);
+      ctx.lineTo(boxX + boxSize * 0.8, boxY + boxSize * 0.3);
+      ctx.stroke();
+    }
+
+    function downloadIcon(canvasId, filename) {
+      const canvas = document.getElementById(canvasId);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // 绘制所有图标
+    drawIcon('icon16', 16);
+    drawIcon('icon48', 48);
+    drawIcon('icon128', 128);
+  </script>
+</body>
+</html>

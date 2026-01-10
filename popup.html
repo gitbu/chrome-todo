@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo Manager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- 头部统计区域 -->
+    <div class="header">
+      <h1>📝 待办事项</h1>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-number" id="totalTodos">0</span>
+          <span class="stat-label">总任务</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number pending" id="pendingTodos">0</span>
+          <span class="stat-label">未完成</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number completed" id="completedTodos">0</span>
+          <span class="stat-label">已完成</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 视图切换按钮 -->
+    <div class="view-toggle">
+      <button class="toggle-btn active" data-view="projects">项目视图</button>
+      <button class="toggle-btn" data-view="all">全部任务</button>
+    </div>
+
+    <!-- 项目视图 -->
+    <div class="view" id="projectsView">
+      <!-- 添加项目表单 -->
+      <div class="add-form">
+        <input type="text" id="newProjectInput" placeholder="输入项目名称...">
+        <button id="addProjectBtn">+ 添加项目</button>
+      </div>
+
+      <!-- 项目列表 -->
+      <div class="projects-list" id="projectsList"></div>
+    </div>
+
+    <!-- 全部任务视图 -->
+    <div class="view hidden" id="allTodosView">
+      <div class="todos-list" id="allTodosList"></div>
+    </div>
+
+    <!-- 项目详情模态框 -->
+    <div class="modal hidden" id="projectModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalProjectName"></h2>
+          <div class="modal-actions">
+            <button class="icon-btn" id="editProjectBtn" title="编辑项目">✏️</button>
+            <button class="icon-btn" id="deleteProjectBtn" title="删除项目">🗑️</button>
+            <button class="icon-btn" id="closeModalBtn" title="关闭">✖️</button>
+          </div>
+        </div>
+
+        <!-- 添加待办事项表单 -->
+        <div class="add-form">
+          <input type="text" id="newTodoInput" placeholder="输入待办事项...">
+          <button id="addTodoBtn">+ 添加</button>
+        </div>
+
+        <!-- 待办事项列表 -->
+        <div class="todos-list" id="todosList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
