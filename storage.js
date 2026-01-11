@@ -266,26 +266,74 @@ const Storage = {
 
   // ============= 子任务管理 =============
 
-  // 添加子任务
-  async addSubtask(todoId, title) {
-    const todos = await this.getTodos();
-    const todo = todos.find(t => t.id === todoId);
-    if (todo) {
-      if (!todo.subtasks) {
-        todo.subtasks = [];
+  // 递归查找子任务
+  _findSubtask(subtasks, subtaskId) {
+    for (const subtask of subtasks) {
+      if (subtask.id === subtaskId) {
+        return subtask;
       }
-      const newSubtask = {
-        id: Date.now().toString(),
-        title: title,
-        completed: false,
-        createdAt: new Date().toISOString()
-      };
-      todo.subtasks.push(newSubtask);
-      todo.updatedAt = new Date().toISOString();
-      await this.saveTodos(todos);
-      return newSubtask;
+      if (subtask.subtasks && subtask.subtasks.length > 0) {
+        const found = this._findSubtask(subtask.subtasks, subtaskId);
+        if (found) return found;
+      }
     }
     return null;
+  },
+
+  // 递归删除子任务
+  _deleteSubtaskRecursive(subtasks, subtaskId) {
+    for (let i = 0; i < subtasks.length; i++) {
+      if (subtasks[i].id === subtaskId) {
+        subtasks.splice(i, 1);
+        return true;
+      }
+      if (subtasks[i].subtasks && subtasks[i].subtasks.length > 0) {
+        if (this._deleteSubtaskRecursive(subtasks[i].subtasks, subtaskId)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  },
+
+  // 添加子任务（支持父子任务ID）
+  async addSubtask(todoId, title, parentSubtaskId = null) {
+    const todos = await this.getTodos();
+    const todo = todos.find(t => t.id === todoId);
+    if (!todo) return null;
+
+    if (!todo.subtasks) {
+      todo.subtasks = [];
+    }
+
+    const newSubtask = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      title: title,
+      completed: false,
+      expanded: true,
+      subtasks: [],
+      createdAt: new Date().toISOString()
+    };
+
+    // 如果指定了父子任务，添加到父子任务下
+    if (parentSubtaskId) {
+      const parentSubtask = this._findSubtask(todo.subtasks, parentSubtaskId);
+      if (parentSubtask) {
+        if (!parentSubtask.subtasks) {
+          parentSubtask.subtasks = [];
+        }
+        parentSubtask.subtasks.push(newSubtask);
+      } else {
+        return null;
+      }
+    } else {
+      // 添加到顶层
+      todo.subtasks.push(newSubtask);
+    }
+
+    todo.updatedAt = new Date().toISOString();
+    await this.saveTodos(todos);
+    return newSubtask;
   },
 
   // 更新子任务
@@ -293,15 +341,12 @@ const Storage = {
     const todos = await this.getTodos();
     const todo = todos.find(t => t.id === todoId);
     if (todo && todo.subtasks) {
-      const subtaskIndex = todo.subtasks.findIndex(s => s.id === subtaskId);
-      if (subtaskIndex !== -1) {
-        todo.subtasks[subtaskIndex] = {
-          ...todo.subtasks[subtaskIndex],
-          ...updates
-        };
+      const subtask = this._findSubtask(todo.subtasks, subtaskId);
+      if (subtask) {
+        Object.assign(subtask, updates);
         todo.updatedAt = new Date().toISOString();
         await this.saveTodos(todos);
-        return todo.subtasks[subtaskIndex];
+        return subtask;
       }
     }
     return null;
@@ -312,9 +357,25 @@ const Storage = {
     const todos = await this.getTodos();
     const todo = todos.find(t => t.id === todoId);
     if (todo && todo.subtasks) {
-      const subtask = todo.subtasks.find(s => s.id === subtaskId);
+      const subtask = this._findSubtask(todo.subtasks, subtaskId);
       if (subtask) {
         subtask.completed = !subtask.completed;
+        todo.updatedAt = new Date().toISOString();
+        await this.saveTodos(todos);
+        return subtask;
+      }
+    }
+    return null;
+  },
+
+  // 切换子任务展开状态
+  async toggleSubtaskExpanded(todoId, subtaskId) {
+    const todos = await this.getTodos();
+    const todo = todos.find(t => t.id === todoId);
+    if (todo && todo.subtasks) {
+      const subtask = this._findSubtask(todo.subtasks, subtaskId);
+      if (subtask) {
+        subtask.expanded = !subtask.expanded;
         todo.updatedAt = new Date().toISOString();
         await this.saveTodos(todos);
         return subtask;
@@ -328,10 +389,12 @@ const Storage = {
     const todos = await this.getTodos();
     const todo = todos.find(t => t.id === todoId);
     if (todo && todo.subtasks) {
-      todo.subtasks = todo.subtasks.filter(s => s.id !== subtaskId);
-      todo.updatedAt = new Date().toISOString();
-      await this.saveTodos(todos);
-      return true;
+      const deleted = this._deleteSubtaskRecursive(todo.subtasks, subtaskId);
+      if (deleted) {
+        todo.updatedAt = new Date().toISOString();
+        await this.saveTodos(todos);
+        return true;
+      }
     }
     return false;
   }

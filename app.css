@@ -598,20 +598,26 @@ body {
 .subtasks-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
   margin-bottom: 12px;
-  max-height: 200px;
+  max-height: 400px;
   overflow-y: auto;
+}
+
+.subtask-wrapper {
+  display: flex;
+  flex-direction: column;
 }
 
 .subtask-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 6px 8px;
+  margin: 2px 0;
   background: var(--bg-secondary);
   border-radius: 6px;
   transition: background 0.2s;
+  position: relative;
 }
 
 .subtask-item:hover {
@@ -623,23 +629,72 @@ body {
   color: var(--text-secondary);
 }
 
+/* 展开/收起按钮 */
+.subtask-toggle {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--text-secondary);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.subtask-toggle:hover {
+  color: var(--primary-color);
+}
+
+.subtask-toggle.collapsed::before {
+  content: '▶';
+}
+
+.subtask-toggle.expanded::before {
+  content: '▼';
+}
+
+.subtask-toggle.empty {
+  visibility: hidden;
+}
+
 .subtask-checkbox {
   width: 16px;
   height: 16px;
   cursor: pointer;
   accent-color: var(--primary-color);
   flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.subtask-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.subtask-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .subtask-text {
   flex: 1;
   font-size: 14px;
   word-wrap: break-word;
+  line-height: 1.4;
 }
 
 .subtask-actions {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   opacity: 0;
   transition: opacity 0.2s;
 }
@@ -648,9 +703,36 @@ body {
   opacity: 1;
 }
 
+.btn-add-child {
+  padding: 2px 6px;
+  border: none;
+  background: transparent;
+  color: var(--primary-color);
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.btn-add-child:hover {
+  background: rgba(74, 144, 226, 0.1);
+}
+
+/* 子任务嵌套缩进 */
+.subtask-children {
+  padding-left: 22px;
+  margin-top: 2px;
+}
+
+.subtask-children.collapsed {
+  display: none;
+}
+
+/* 顶层添加子任务表单 */
 .add-subtask-form {
   display: flex;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .add-subtask-input {
@@ -681,6 +763,41 @@ body {
 }
 
 .btn-add-subtask:hover {
+  background: var(--primary-hover);
+}
+
+/* 内联添加子任务输入框 */
+.inline-add-subtask {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+  padding-left: 22px;
+}
+
+.inline-add-subtask input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.inline-add-subtask input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.inline-add-subtask button {
+  padding: 4px 8px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.inline-add-subtask button:hover {
   background: var(--primary-hover);
 }
 

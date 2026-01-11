@@ -265,19 +265,37 @@ async function renderTodos() {
     return a.completed ? 1 : -1;
   });
 
+  // 递归计算所有子任务
+  function countSubtasks(subtasks) {
+    let total = 0;
+    let completed = 0;
+
+    subtasks.forEach(subtask => {
+      total++;
+      if (subtask.completed) completed++;
+
+      if (subtask.subtasks && subtask.subtasks.length > 0) {
+        const childCount = countSubtasks(subtask.subtasks);
+        total += childCount.total;
+        completed += childCount.completed;
+      }
+    });
+
+    return { total, completed };
+  }
+
   DOM.todosContainer.innerHTML = todos.map(todo => {
     const tag = todo.tagId ? App.tags.find(t => t.id === todo.tagId) : null;
     const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
     const isActive = App.selectedTodoId === todo.id;
 
-    // 计算子任务进度
+    // 计算子任务进度（递归）
     let subtaskProgress = '';
     if (todo.subtasks && todo.subtasks.length > 0) {
-      const completedCount = todo.subtasks.filter(s => s.completed).length;
-      const totalCount = todo.subtasks.length;
+      const { total, completed } = countSubtasks(todo.subtasks);
       subtaskProgress = `
         <span class="subtask-progress">
-          ☑️ ${completedCount}/${totalCount}
+          ☑️ ${completed}/${total}
         </span>
       `;
     }
@@ -499,41 +517,140 @@ function clearSearch() {
 
 // ============= 子任务管理 =============
 
+// 递归渲染子任务
+function renderSubtaskItem(subtask, level = 0) {
+  const hasChildren = subtask.subtasks && subtask.subtasks.length > 0;
+  const isExpanded = subtask.expanded !== false;
+  const toggleClass = hasChildren ? (isExpanded ? 'expanded' : 'collapsed') : 'empty';
+
+  let html = `
+    <div class="subtask-wrapper" data-id="${subtask.id}">
+      <div class="subtask-item ${subtask.completed ? 'completed' : ''}">
+        <button class="subtask-toggle ${toggleClass}"></button>
+        <input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''}>
+        <div class="subtask-content">
+          <div class="subtask-main">
+            <span class="subtask-text">${escapeHtml(subtask.title)}</span>
+            <div class="subtask-actions">
+              <button class="btn-add-child" title="添加子任务">+ 子任务</button>
+              <button class="icon-btn-tiny edit-subtask" title="编辑">✏️</button>
+              <button class="icon-btn-tiny delete-subtask" title="删除">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+  `;
+
+  // 递归渲染子任务的子任务
+  if (hasChildren) {
+    html += `<div class="subtask-children ${!isExpanded ? 'collapsed' : ''}">`;
+    subtask.subtasks.forEach(child => {
+      html += renderSubtaskItem(child, level + 1);
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  return html;
+}
+
 function renderSubtasks(todo) {
   if (!todo.subtasks || todo.subtasks.length === 0) {
     DOM.subtasksList.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary); padding: 8px;">暂无子任务</div>';
     return;
   }
 
-  DOM.subtasksList.innerHTML = todo.subtasks.map(subtask => `
-    <div class="subtask-item ${subtask.completed ? 'completed' : ''}" data-id="${subtask.id}">
-      <input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''}>
-      <span class="subtask-text">${escapeHtml(subtask.title)}</span>
-      <div class="subtask-actions">
-        <button class="icon-btn-tiny edit-subtask" title="编辑">✏️</button>
-        <button class="icon-btn-tiny delete-subtask" title="删除">🗑️</button>
-      </div>
-    </div>
-  `).join('');
+  DOM.subtasksList.innerHTML = todo.subtasks.map(subtask => renderSubtaskItem(subtask)).join('');
+  attachSubtaskEvents();
+}
 
-  // 绑定事件
-  DOM.subtasksList.querySelectorAll('.subtask-item').forEach(item => {
-    const subtaskId = item.dataset.id;
+function attachSubtaskEvents() {
+  // 展开/收起按钮
+  DOM.subtasksList.querySelectorAll('.subtask-toggle:not(.empty)').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const wrapper = btn.closest('.subtask-wrapper');
+      const subtaskId = wrapper.dataset.id;
 
-    // 切换完成状态
-    const checkbox = item.querySelector('.subtask-checkbox');
-    checkbox.addEventListener('change', async () => {
+      await Storage.toggleSubtaskExpanded(App.selectedTodoId, subtaskId);
+      const todo = await Storage.getTodo(App.selectedTodoId);
+      renderSubtasks(todo);
+    });
+  });
+
+  // 复选框
+  DOM.subtasksList.querySelectorAll('.subtask-checkbox').forEach(checkbox => {
+    checkbox.addEventListener('change', async (e) => {
+      e.stopPropagation();
+      const wrapper = checkbox.closest('.subtask-wrapper');
+      const subtaskId = wrapper.dataset.id;
+
       await Storage.toggleSubtask(App.selectedTodoId, subtaskId);
       const todo = await Storage.getTodo(App.selectedTodoId);
       renderSubtasks(todo);
       await updateUI();
     });
+  });
 
-    // 编辑子任务
-    const editBtn = item.querySelector('.edit-subtask');
-    editBtn.addEventListener('click', async () => {
+  // 添加子任务按钮
+  DOM.subtasksList.querySelectorAll('.btn-add-child').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const wrapper = btn.closest('.subtask-wrapper');
+      const subtaskId = wrapper.dataset.id;
+
+      // 隐藏其他所有内联输入框
+      DOM.subtasksList.querySelectorAll('.inline-add-subtask').forEach(form => form.remove());
+
+      // 创建内联输入框
+      const content = wrapper.querySelector('.subtask-content');
+      const inlineForm = document.createElement('div');
+      inlineForm.className = 'inline-add-subtask';
+      inlineForm.innerHTML = `
+        <input type="text" placeholder="输入子任务..." autofocus>
+        <button>添加</button>
+        <button type="button" class="cancel-btn" style="background: #999;">取消</button>
+      `;
+      content.appendChild(inlineForm);
+
+      const input = inlineForm.querySelector('input');
+      const addBtn = inlineForm.querySelector('button:not(.cancel-btn)');
+      const cancelBtn = inlineForm.querySelector('.cancel-btn');
+
+      input.focus();
+
+      const handleAdd = async () => {
+        const title = input.value.trim();
+        if (!title) return;
+
+        await Storage.addSubtask(App.selectedTodoId, title, subtaskId);
+        const todo = await Storage.getTodo(App.selectedTodoId);
+        renderSubtasks(todo);
+        await updateUI();
+      };
+
+      addBtn.addEventListener('click', handleAdd);
+      input.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleAdd();
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        inlineForm.remove();
+      });
+    });
+  });
+
+  // 编辑按钮
+  DOM.subtasksList.querySelectorAll('.edit-subtask').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const wrapper = btn.closest('.subtask-wrapper');
+      const subtaskId = wrapper.dataset.id;
+
+      // 获取当前子任务
       const todo = await Storage.getTodo(App.selectedTodoId);
-      const subtask = todo.subtasks.find(s => s.id === subtaskId);
+      const subtask = Storage._findSubtask(todo.subtasks, subtaskId);
+
       const newTitle = prompt('编辑子任务:', subtask.title);
       if (newTitle && newTitle.trim()) {
         await Storage.updateSubtask(App.selectedTodoId, subtaskId, { title: newTitle.trim() });
@@ -541,11 +658,16 @@ function renderSubtasks(todo) {
         renderSubtasks(updatedTodo);
       }
     });
+  });
 
-    // 删除子任务
-    const deleteBtn = item.querySelector('.delete-subtask');
-    deleteBtn.addEventListener('click', async () => {
-      if (confirm('确定要删除这个子任务吗？')) {
+  // 删除按钮
+  DOM.subtasksList.querySelectorAll('.delete-subtask').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const wrapper = btn.closest('.subtask-wrapper');
+      const subtaskId = wrapper.dataset.id;
+
+      if (confirm('确定要删除这个子任务及其所有子任务吗？')) {
         await Storage.deleteSubtask(App.selectedTodoId, subtaskId);
         const todo = await Storage.getTodo(App.selectedTodoId);
         renderSubtasks(todo);
@@ -561,7 +683,7 @@ async function addSubtask() {
   const title = DOM.newSubtaskInput.value.trim();
   if (!title) return;
 
-  await Storage.addSubtask(App.selectedTodoId, title);
+  await Storage.addSubtask(App.selectedTodoId, title, null);
   DOM.newSubtaskInput.value = '';
 
   const todo = await Storage.getTodo(App.selectedTodoId);
