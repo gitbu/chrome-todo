@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Todo Manager",
-  "version": "3.0.0",
-  "description": "TickTick风格的待办事项管理器，支持列表/项目、优先级、智能列表、无限子任务和搜索",
+  "version": "4.0.0",
+  "description": "TickTick风格的待办事项管理器，包含完整的付费功能：重复任务、提醒、多标签、番茄钟、日历视图",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
