@@ -69,12 +69,25 @@
               <span>✕</span>
             </button>
           </div>
-          <button class="btn-icon" id="toggleCompletedBtn" title="显示/隐藏已完成">
-            <span>✓</span>
-          </button>
-          <button class="btn-icon" id="sortBtn" title="排序">
-            <span>↕️</span>
-          </button>
+          <div class="sort-dropdown">
+            <button class="btn-icon" id="sortBtn" title="排序">
+              <span>↕️</span>
+            </button>
+            <div class="sort-menu hidden" id="sortMenu">
+              <div class="sort-option" data-sort="manual">
+                <span>📌</span> 手动排序
+              </div>
+              <div class="sort-option" data-sort="date">
+                <span>📅</span> 按日期
+              </div>
+              <div class="sort-option" data-sort="priority">
+                <span>⭐</span> 按优先级
+              </div>
+              <div class="sort-option" data-sort="title">
+                <span>🔤</span> 按标题
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -104,14 +117,33 @@
           type="text"
           id="newTodoInput"
           class="add-todo-input"
-          placeholder="添加待办事项..."
+          placeholder="添加待办事项，回车保存..."
         >
-        <button class="add-todo-btn" id="addTodoBtn">添加</button>
+        <div class="quick-actions">
+          <button class="quick-action-btn" id="quickDateBtn" title="设置日期">📅</button>
+          <button class="quick-action-btn" id="quickPriorityBtn" title="设置优先级">⭐</button>
+          <button class="quick-action-btn" id="quickListBtn" title="选择列表">📁</button>
+        </div>
       </div>
 
       <!-- 待办列表 -->
-      <div class="todos-container" id="todosContainer">
-        <!-- 待办事项动态插入 -->
+      <div class="todos-wrapper">
+        <!-- 未完成任务 -->
+        <div class="todos-container" id="todosContainer">
+          <!-- 待办事项动态插入 -->
+        </div>
+
+        <!-- 已完成任务折叠区域 -->
+        <div class="completed-section" id="completedSection" style="display: none;">
+          <div class="completed-header" id="completedHeader">
+            <span class="completed-toggle">▼</span>
+            <span class="completed-title">已完成</span>
+            <span class="completed-count" id="completedCount">0</span>
+          </div>
+          <div class="completed-tasks" id="completedTasks">
+            <!-- 已完成的任务动态插入 -->
+          </div>
+        </div>
       </div>
     </main>
 

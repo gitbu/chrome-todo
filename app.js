@@ -6,7 +6,11 @@ const App = {
   currentListId: null,
   selectedTodoId: null,
   searchQuery: '',
-  showCompleted: true,
+  sortBy: 'manual', // manual, date, priority, title
+  completedExpanded: true, // 已完成区域是否展开
+  quickDate: null, // 快速添加的日期
+  quickPriority: 'none', // 快速添加的优先级
+  quickList: null, // 快速添加的列表
   todos: [],
   lists: []
 };
@@ -28,7 +32,8 @@ const DOM = {
   viewTitle: document.getElementById('viewTitle'),
   searchInput: document.getElementById('searchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
-  toggleCompletedBtn: document.getElementById('toggleCompletedBtn'),
+  sortBtn: document.getElementById('sortBtn'),
+  sortMenu: document.getElementById('sortMenu'),
 
   // 统计面板
   statsPanel: document.getElementById('statsPanel'),
@@ -39,10 +44,16 @@ const DOM = {
 
   // 添加待办
   newTodoInput: document.getElementById('newTodoInput'),
-  addTodoBtn: document.getElementById('addTodoBtn'),
+  quickDateBtn: document.getElementById('quickDateBtn'),
+  quickPriorityBtn: document.getElementById('quickPriorityBtn'),
+  quickListBtn: document.getElementById('quickListBtn'),
 
   // 待办列表
   todosContainer: document.getElementById('todosContainer'),
+  completedSection: document.getElementById('completedSection'),
+  completedHeader: document.getElementById('completedHeader'),
+  completedCount: document.getElementById('completedCount'),
+  completedTasks: document.getElementById('completedTasks'),
 
   // 详情面板
   detailPanel: document.getElementById('detailPanel'),
@@ -90,10 +101,14 @@ function setupEventListeners() {
   DOM.addListBtn.addEventListener('click', addList);
 
   // 添加待办
-  DOM.addTodoBtn.addEventListener('click', addTodo);
   DOM.newTodoInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addTodo();
   });
+
+  // 快速操作按钮
+  DOM.quickDateBtn.addEventListener('click', toggleQuickDate);
+  DOM.quickPriorityBtn.addEventListener('click', toggleQuickPriority);
+  DOM.quickListBtn.addEventListener('click', toggleQuickList);
 
   // 详情面板
   DOM.closeDetailBtn.addEventListener('click', closeDetailPanel);
@@ -111,8 +126,24 @@ function setupEventListeners() {
   DOM.searchInput.addEventListener('input', handleSearch);
   DOM.clearSearchBtn.addEventListener('click', clearSearch);
 
-  // 切换显示/隐藏已完成
-  DOM.toggleCompletedBtn.addEventListener('click', toggleShowCompleted);
+  // 排序菜单
+  DOM.sortBtn.addEventListener('click', toggleSortMenu);
+  DOM.sortMenu.querySelectorAll('.sort-option').forEach(option => {
+    option.addEventListener('click', (e) => {
+      const sortType = e.currentTarget.dataset.sort;
+      setSortBy(sortType);
+    });
+  });
+
+  // 已完成区域折叠
+  DOM.completedHeader.addEventListener('click', toggleCompletedSection);
+
+  // 点击外部关闭排序菜单
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.sort-dropdown')) {
+      DOM.sortMenu.classList.add('hidden');
+    }
+  });
 
   // 子任务
   DOM.addSubtaskBtn.addEventListener('click', addSubtask);
@@ -282,14 +313,18 @@ async function renderTodos() {
     });
   }
 
-  // 应用已完成任务过滤
-  if (!App.showCompleted) {
-    todos = todos.filter(todo => !todo.completed);
-  }
-
   App.todos = todos;
 
-  if (todos.length === 0) {
+  // 分离未完成和已完成任务
+  const pending = todos.filter(todo => !todo.completed);
+  const completed = todos.filter(todo => todo.completed);
+
+  // 应用排序
+  sortTodos(pending);
+  sortTodos(completed);
+
+  // 渲染未完成任务
+  if (pending.length === 0 && completed.length === 0) {
     const emptyText = App.searchQuery ? '没有找到匹配的待办事项' : '还没有待办事项';
     DOM.todosContainer.innerHTML = `
       <div class="empty-state">
@@ -297,16 +332,9 @@ async function renderTodos() {
         <div class="empty-text">${emptyText}</div>
       </div>
     `;
+    DOM.completedSection.style.display = 'none';
     return;
   }
-
-  // 排序：未完成的在前，已完成的在后
-  todos.sort((a, b) => {
-    if (a.completed === b.completed) {
-      return new Date(b.createdAt) - new Date(a.createdAt);
-    }
-    return a.completed ? 1 : -1;
-  });
 
   // 递归计算所有子任务
   function countSubtasks(subtasks) {
@@ -327,7 +355,8 @@ async function renderTodos() {
     return { total, completed };
   }
 
-  DOM.todosContainer.innerHTML = todos.map(todo => {
+  // 渲染单个任务的HTML
+  function renderTodoItem(todo) {
     const list = todo.listId ? App.lists.find(l => l.id === todo.listId) : null;
     const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
     const isActive = App.selectedTodoId === todo.id;
@@ -377,52 +406,183 @@ async function renderTodos() {
         </div>
       </div>
     `;
-  }).join('');
+  }
+
+  // 渲染未完成任务
+  DOM.todosContainer.innerHTML = pending.length > 0 ? pending.map(renderTodoItem).join('') :
+    '<div style="padding: 20px; text-align: center; color: var(--text-secondary);">没有未完成的任务</div>';
+
+  // 渲染已完成任务
+  if (completed.length > 0) {
+    DOM.completedSection.style.display = 'block';
+    DOM.completedCount.textContent = completed.length;
+    DOM.completedTasks.innerHTML = completed.map(renderTodoItem).join('');
+
+    // 更新折叠状态
+    if (App.completedExpanded) {
+      DOM.completedSection.classList.remove('collapsed');
+    } else {
+      DOM.completedSection.classList.add('collapsed');
+    }
+  } else {
+    DOM.completedSection.style.display = 'none';
+  }
 
   // 绑定待办事项事件
-  DOM.todosContainer.querySelectorAll('.todo-item').forEach(item => {
-    const todoId = item.dataset.id;
+  const bindTodoEvents = (container) => {
+    container.querySelectorAll('.todo-item').forEach(item => {
+      const todoId = item.dataset.id;
 
-    // 复选框切换
-    const checkbox = item.querySelector('.todo-checkbox');
-    checkbox.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      await Storage.toggleTodo(todoId);
-      await updateUI();
-      // 如果当前正在编辑这个待办，更新详情面板
-      if (App.selectedTodoId === todoId) {
-        const todo = await Storage.getTodo(todoId);
-        DOM.detailCompletedCheckbox.checked = todo.completed;
-      }
-    });
+      // 复选框切换
+      const checkbox = item.querySelector('.todo-checkbox');
+      checkbox.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await Storage.toggleTodo(todoId);
+        await updateUI();
+        // 如果当前正在编辑这个待办，更新详情面板
+        if (App.selectedTodoId === todoId) {
+          const todo = await Storage.getTodo(todoId);
+          DOM.detailCompletedCheckbox.checked = todo.completed;
+        }
+      });
 
-    // 点击待办打开详情
-    item.addEventListener('click', () => {
-      openDetailPanel(todoId);
+      // 点击待办打开详情
+      item.addEventListener('click', () => {
+        openDetailPanel(todoId);
+      });
     });
-  });
+  };
+
+  bindTodoEvents(DOM.todosContainer);
+  bindTodoEvents(DOM.completedTasks);
 }
 
 // ============= 待办事项操作 =============
+
+// 排序函数
+function sortTodos(todos) {
+  switch (App.sortBy) {
+    case 'date':
+      todos.sort((a, b) => {
+        if (!a.dueDate && !b.dueDate) return 0;
+        if (!a.dueDate) return 1;
+        if (!b.dueDate) return -1;
+        return new Date(a.dueDate) - new Date(b.dueDate);
+      });
+      break;
+    case 'priority':
+      const priorityOrder = { high: 0, medium: 1, low: 2, none: 3 };
+      todos.sort((a, b) => {
+        return priorityOrder[a.priority || 'none'] - priorityOrder[b.priority || 'none'];
+      });
+      break;
+    case 'title':
+      todos.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+      break;
+    case 'manual':
+    default:
+      // 按创建时间倒序
+      todos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      break;
+  }
+}
+
+// 切换排序菜单
+function toggleSortMenu(e) {
+  e.stopPropagation();
+  DOM.sortMenu.classList.toggle('hidden');
+}
+
+// 设置排序方式
+function setSortBy(sortType) {
+  App.sortBy = sortType;
+
+  // 更新菜单选中状态
+  DOM.sortMenu.querySelectorAll('.sort-option').forEach(option => {
+    if (option.dataset.sort === sortType) {
+      option.classList.add('active');
+    } else {
+      option.classList.remove('active');
+    }
+  });
+
+  DOM.sortMenu.classList.add('hidden');
+  renderTodos();
+}
+
+// 切换已完成区域折叠
+function toggleCompletedSection() {
+  App.completedExpanded = !App.completedExpanded;
+  if (App.completedExpanded) {
+    DOM.completedSection.classList.remove('collapsed');
+  } else {
+    DOM.completedSection.classList.add('collapsed');
+  }
+}
+
+// 快速操作按钮
+function toggleQuickDate() {
+  if (App.quickDate) {
+    App.quickDate = null;
+    DOM.quickDateBtn.classList.remove('active');
+  } else {
+    const today = new Date().toISOString().split('T')[0];
+    App.quickDate = today;
+    DOM.quickDateBtn.classList.add('active');
+  }
+}
+
+function toggleQuickPriority() {
+  const priorities = ['none', 'low', 'medium', 'high'];
+  const currentIndex = priorities.indexOf(App.quickPriority);
+  const nextIndex = (currentIndex + 1) % priorities.length;
+  App.quickPriority = priorities[nextIndex];
+
+  if (App.quickPriority === 'none') {
+    DOM.quickPriorityBtn.classList.remove('active');
+    DOM.quickPriorityBtn.textContent = '⭐';
+  } else {
+    DOM.quickPriorityBtn.classList.add('active');
+    const icons = { low: '🔵', medium: '🟡', high: '🔴' };
+    DOM.quickPriorityBtn.textContent = icons[App.quickPriority];
+  }
+}
+
+function toggleQuickList() {
+  if (App.quickList || App.lists.length === 0) {
+    App.quickList = null;
+    DOM.quickListBtn.classList.remove('active');
+  } else {
+    // 简单地选择第一个列表
+    if (App.lists.length > 0) {
+      App.quickList = App.lists[0].id;
+      DOM.quickListBtn.classList.add('active');
+    }
+  }
+}
 
 async function addTodo() {
   const title = DOM.newTodoInput.value.trim();
   if (!title) return;
 
-  const options = {};
+  const options = {
+    priority: App.quickPriority,
+    dueDate: App.quickDate,
+    listId: App.quickList
+  };
 
-  // 如果在列表视图下，自动设置列表
-  if (App.currentView === 'list' && App.currentListId) {
+  // 如果在列表视图下且没有设置快速列表，自动设置列表
+  if (App.currentView === 'list' && App.currentListId && !options.listId) {
     options.listId = App.currentListId;
   }
 
-  // 如果在今天视图下，自动设置日期为今天
-  if (App.currentView === 'today') {
+  // 如果在今天视图下且没有设置快速日期，自动设置日期为今天
+  if (App.currentView === 'today' && !options.dueDate) {
     options.dueDate = new Date().toISOString().split('T')[0];
   }
 
-  // 如果在明天视图下，自动设置日期为明天
-  if (App.currentView === 'tomorrow') {
+  // 如果在明天视图下且没有设置快速日期，自动设置日期为明天
+  if (App.currentView === 'tomorrow' && !options.dueDate) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     options.dueDate = tomorrow.toISOString().split('T')[0];
@@ -430,6 +590,16 @@ async function addTodo() {
 
   await Storage.addTodo(title, options);
   DOM.newTodoInput.value = '';
+
+  // 重置快速操作状态
+  App.quickDate = null;
+  App.quickPriority = 'none';
+  App.quickList = null;
+  DOM.quickDateBtn.classList.remove('active');
+  DOM.quickPriorityBtn.classList.remove('active');
+  DOM.quickPriorityBtn.textContent = '⭐';
+  DOM.quickListBtn.classList.remove('active');
+
   await updateUI();
 }
 
@@ -576,21 +746,6 @@ function clearSearch() {
   App.searchQuery = '';
   DOM.searchInput.value = '';
   DOM.clearSearchBtn.style.display = 'none';
-  renderTodos();
-}
-
-function toggleShowCompleted() {
-  App.showCompleted = !App.showCompleted;
-
-  // 更新按钮样式
-  if (App.showCompleted) {
-    DOM.toggleCompletedBtn.style.opacity = '1';
-    DOM.toggleCompletedBtn.style.background = '';
-  } else {
-    DOM.toggleCompletedBtn.style.opacity = '0.5';
-    DOM.toggleCompletedBtn.style.background = 'var(--bg-hover)';
-  }
-
   renderTodos();
 }
 

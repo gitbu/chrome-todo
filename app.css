@@ -303,7 +303,8 @@ body {
 /* 添加待办表单 */
 .add-todo-form {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
   padding: 20px 32px;
   border-bottom: 1px solid var(--border-color);
 }
@@ -323,20 +324,34 @@ body {
   box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
-.add-todo-btn {
-  padding: 12px 24px;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
+.quick-actions {
+  display: flex;
+  gap: 4px;
 }
 
-.add-todo-btn:hover {
-  background: var(--primary-hover);
+.quick-action-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.quick-action-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.quick-action-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
 }
 
 /* 待办列表 */
@@ -937,4 +952,107 @@ body {
   .detail-panel {
     display: none;
   }
+}
+
+/* ============= 排序下拉菜单 ============= */
+.sort-dropdown {
+  position: relative;
+}
+
+.sort-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.sort-option {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.sort-option:hover {
+  background: var(--bg-hover);
+}
+
+.sort-option.active {
+  background: var(--bg-hover);
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* ============= 已完成任务区域 ============= */
+.todos-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.todos-container {
+  padding: 16px 32px;
+}
+
+.completed-section {
+  border-top: 1px solid var(--border-color);
+}
+
+.completed-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.completed-header:hover {
+  background: var(--bg-hover);
+}
+
+.completed-toggle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+}
+
+.completed-section.collapsed .completed-toggle {
+  transform: rotate(-90deg);
+}
+
+.completed-title {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.completed-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.completed-tasks {
+  padding: 0 32px 16px 32px;
+}
+
+.completed-section.collapsed .completed-tasks {
+  display: none;
 }
