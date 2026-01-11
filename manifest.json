@@ -1,20 +1,22 @@
 {
   "manifest_version": 3,
   "name": "Todo Manager",
-  "version": "1.0.0",
-  "description": "一个功能完整的待办事项管理器，支持项目分组和数据统计",
+  "version": "2.0.0",
+  "description": "一个类似TickTick的待办事项管理器，支持标签、今天视图和数据统计",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "permissions": [
     "storage"

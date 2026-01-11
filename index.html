@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo Manager</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 左侧导航栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1 class="app-title">📝 Todo Manager</h1>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- 主要导航 -->
+        <div class="nav-section">
+          <div class="nav-item active" data-view="home">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">首页</span>
+            <span class="nav-count" id="homeCount">0</span>
+          </div>
+          <div class="nav-item" data-view="today">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">今天</span>
+            <span class="nav-count" id="todayCount">0</span>
+          </div>
+        </div>
+
+        <!-- 标签列表 -->
+        <div class="nav-section">
+          <div class="section-header">
+            <span class="section-title">标签</span>
+            <button class="icon-btn-small" id="addTagBtn" title="添加标签">+</button>
+          </div>
+          <div id="tagsList" class="tags-list">
+            <!-- 标签动态插入 -->
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- 中间待办列表 -->
+    <main class="main-content">
+      <!-- 顶部标题栏 -->
+      <header class="content-header">
+        <h2 class="view-title" id="viewTitle">首页</h2>
+        <div class="header-actions">
+          <button class="btn-icon" id="sortBtn" title="排序">
+            <span>↕️</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 统计面板（仅首页显示） -->
+      <div class="stats-panel" id="statsPanel">
+        <div class="stat-card">
+          <div class="stat-number" id="totalTasks">0</div>
+          <div class="stat-label">总任务</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number highlight" id="pendingTasks">0</div>
+          <div class="stat-label">未完成</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number success" id="completedTasks">0</div>
+          <div class="stat-label">已完成</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="todayTasks">0</div>
+          <div class="stat-label">今天</div>
+        </div>
+      </div>
+
+      <!-- 添加待办事项 -->
+      <div class="add-todo-form">
+        <input
+          type="text"
+          id="newTodoInput"
+          class="add-todo-input"
+          placeholder="添加待办事项..."
+        >
+        <button class="add-todo-btn" id="addTodoBtn">添加</button>
+      </div>
+
+      <!-- 待办列表 -->
+      <div class="todos-container" id="todosContainer">
+        <!-- 待办事项动态插入 -->
+      </div>
+    </main>
+
+    <!-- 右侧详情面板 -->
+    <aside class="detail-panel" id="detailPanel">
+      <div class="detail-content">
+        <div class="detail-empty">
+          <div class="empty-icon">📝</div>
+          <div class="empty-text">选择一个待办事项查看详情</div>
+        </div>
+
+        <div class="detail-form hidden" id="detailForm">
+          <!-- 关闭按钮 -->
+          <div class="detail-header">
+            <button class="close-btn" id="closeDetailBtn">✕</button>
+          </div>
+
+          <!-- 标题编辑 -->
+          <div class="detail-section">
+            <textarea
+              class="detail-title-input"
+              id="detailTitleInput"
+              placeholder="待办事项标题..."
+              rows="2"
+            ></textarea>
+          </div>
+
+          <!-- 完成状态 -->
+          <div class="detail-section">
+            <label class="checkbox-label">
+              <input type="checkbox" id="detailCompletedCheckbox">
+              <span>标记为已完成</span>
+            </label>
+          </div>
+
+          <!-- 标签选择 -->
+          <div class="detail-section">
+            <label class="section-label">标签</label>
+            <select id="detailTagSelect" class="detail-select">
+              <option value="">无标签</option>
+              <!-- 标签选项动态插入 -->
+            </select>
+          </div>
+
+          <!-- 日期设置 -->
+          <div class="detail-section">
+            <label class="section-label">截止日期</label>
+            <input type="date" id="detailDateInput" class="detail-input">
+          </div>
+
+          <!-- 备注 -->
+          <div class="detail-section">
+            <label class="section-label">备注</label>
+            <textarea
+              id="detailNotesInput"
+              class="detail-textarea"
+              placeholder="添加备注..."
+              rows="6"
+            ></textarea>
+          </div>
+
+          <!-- 操作按钮 -->
+          <div class="detail-actions">
+            <button class="btn-danger" id="deleteTodoBtn">删除待办</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
