@@ -5,6 +5,7 @@ const App = {
   currentView: 'home',
   currentTagId: null,
   selectedTodoId: null,
+  searchQuery: '',
   todos: [],
   tags: []
 };
@@ -22,6 +23,8 @@ const DOM = {
 
   // 头部
   viewTitle: document.getElementById('viewTitle'),
+  searchInput: document.getElementById('searchInput'),
+  clearSearchBtn: document.getElementById('clearSearchBtn'),
 
   // 统计面板
   statsPanel: document.getElementById('statsPanel'),
@@ -92,6 +95,10 @@ function setupEventListeners() {
   DOM.detailTagSelect.addEventListener('change', updateSelectedTodo);
   DOM.detailDateInput.addEventListener('change', updateSelectedTodo);
   DOM.detailNotesInput.addEventListener('blur', updateSelectedTodo);
+
+  // 搜索功能
+  DOM.searchInput.addEventListener('input', handleSearch);
+  DOM.clearSearchBtn.addEventListener('click', clearSearch);
 }
 
 // ============= 视图切换 =============
@@ -216,13 +223,24 @@ async function renderTodos() {
     todos = await Storage.getTodosByTag(App.currentTagId);
   }
 
+  // 应用搜索过滤
+  if (App.searchQuery) {
+    const query = App.searchQuery.toLowerCase();
+    todos = todos.filter(todo => {
+      const titleMatch = todo.title.toLowerCase().includes(query);
+      const notesMatch = todo.notes && todo.notes.toLowerCase().includes(query);
+      return titleMatch || notesMatch;
+    });
+  }
+
   App.todos = todos;
 
   if (todos.length === 0) {
+    const emptyText = App.searchQuery ? '没有找到匹配的待办事项' : '还没有待办事项';
     DOM.todosContainer.innerHTML = `
       <div class="empty-state">
         <div class="empty-icon">📝</div>
-        <div class="empty-text">还没有待办事项</div>
+        <div class="empty-text">${emptyText}</div>
       </div>
     `;
     return;
@@ -426,6 +444,30 @@ function formatDate(dateString) {
     const day = date.getDate();
     return `${month}月${day}日`;
   }
+}
+
+// ============= 搜索功能 =============
+
+function handleSearch(e) {
+  const query = e.target.value.trim();
+  App.searchQuery = query;
+
+  // 显示或隐藏清除按钮
+  if (query) {
+    DOM.clearSearchBtn.style.display = 'block';
+  } else {
+    DOM.clearSearchBtn.style.display = 'none';
+  }
+
+  // 重新渲染待办列表
+  renderTodos();
+}
+
+function clearSearch() {
+  App.searchQuery = '';
+  DOM.searchInput.value = '';
+  DOM.clearSearchBtn.style.display = 'none';
+  renderTodos();
 }
 
 // ============= 启动应用 =============

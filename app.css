@@ -208,6 +208,35 @@ body {
 .header-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+/* 搜索框 */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.search-input {
+  width: 240px;
+  padding: 8px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+  background: var(--bg-primary);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
 }
 
 /* 统计面板 */
