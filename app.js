@@ -60,9 +60,9 @@ const DOM = {
   detailForm: document.getElementById('detailForm'),
   detailTitleInput: document.getElementById('detailTitleInput'),
   detailCompletedCheckbox: document.getElementById('detailCompletedCheckbox'),
-  detailListSelect: document.getElementById('detailTagSelect'), // 元素ID保持不变
-  detailPrioritySelect: document.getElementById('detailPrioritySelect'),
+  detailListSelect: document.getElementById('detailListSelect'),
   detailDateInput: document.getElementById('detailDateInput'),
+  dateShortcuts: document.getElementById('dateShortcuts'),
   detailNotesInput: document.getElementById('detailNotesInput'),
   closeDetailBtn: document.getElementById('closeDetailBtn'),
   deleteTodoBtn: document.getElementById('deleteTodoBtn'),
@@ -116,11 +116,39 @@ function setupEventListeners() {
 
   // 详情输入变化 - 自动保存
   DOM.detailTitleInput.addEventListener('blur', updateSelectedTodo);
+  DOM.detailTitleInput.addEventListener('input', autoResizeTextarea);
   DOM.detailCompletedCheckbox.addEventListener('change', updateSelectedTodo);
   DOM.detailListSelect.addEventListener('change', updateSelectedTodo);
-  DOM.detailPrioritySelect.addEventListener('change', updateSelectedTodo);
   DOM.detailDateInput.addEventListener('change', updateSelectedTodo);
   DOM.detailNotesInput.addEventListener('blur', updateSelectedTodo);
+
+  // 优先级按钮
+  document.querySelectorAll('.priority-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const priority = btn.dataset.priority;
+      setPriority(priority);
+    });
+  });
+
+  // 日期快捷选项
+  DOM.detailDateInput.addEventListener('click', () => {
+    DOM.dateShortcuts.classList.remove('hidden');
+  });
+
+  document.querySelectorAll('.date-shortcut').forEach(shortcut => {
+    shortcut.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const type = shortcut.dataset.shortcut;
+      setDateShortcut(type);
+    });
+  });
+
+  // 点击外部关闭日期快捷选项
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#detailDateItem')) {
+      DOM.dateShortcuts.classList.add('hidden');
+    }
+  });
 
   // 搜索功能
   DOM.searchInput.addEventListener('input', handleSearch);
@@ -603,6 +631,64 @@ async function addTodo() {
   await updateUI();
 }
 
+// 自动调整文本框高度
+function autoResizeTextarea() {
+  DOM.detailTitleInput.style.height = 'auto';
+  DOM.detailTitleInput.style.height = DOM.detailTitleInput.scrollHeight + 'px';
+}
+
+// 设置优先级
+async function setPriority(priority) {
+  if (!App.selectedTodoId) return;
+
+  // 更新UI显示
+  document.querySelectorAll('.priority-btn').forEach(btn => {
+    if (btn.dataset.priority === priority) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // 保存
+  await Storage.updateTodo(App.selectedTodoId, { priority });
+  await updateUI();
+}
+
+// 设置日期快捷选项
+async function setDateShortcut(type) {
+  if (!App.selectedTodoId) return;
+
+  let date = null;
+  const today = new Date();
+
+  switch (type) {
+    case 'today':
+      date = today.toISOString().split('T')[0];
+      break;
+    case 'tomorrow':
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      date = tomorrow.toISOString().split('T')[0];
+      break;
+    case 'nextWeek':
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      date = nextWeek.toISOString().split('T')[0];
+      break;
+    case 'clear':
+      date = null;
+      break;
+  }
+
+  DOM.detailDateInput.value = date || '';
+  DOM.dateShortcuts.classList.add('hidden');
+
+  // 保存
+  await Storage.updateTodo(App.selectedTodoId, { dueDate: date });
+  await updateUI();
+}
+
 async function updateSelectedTodo() {
   if (!App.selectedTodoId) return;
 
@@ -610,7 +696,6 @@ async function updateSelectedTodo() {
     title: DOM.detailTitleInput.value.trim(),
     completed: DOM.detailCompletedCheckbox.checked,
     listId: DOM.detailListSelect.value || null,
-    priority: DOM.detailPrioritySelect.value || 'none',
     dueDate: DOM.detailDateInput.value || null,
     notes: DOM.detailNotesInput.value.trim()
   };
@@ -646,9 +731,20 @@ async function openDetailPanel(todoId) {
   DOM.detailTitleInput.value = todo.title;
   DOM.detailCompletedCheckbox.checked = todo.completed;
   DOM.detailListSelect.value = todo.listId || '';
-  DOM.detailPrioritySelect.value = todo.priority || 'none';
   DOM.detailDateInput.value = todo.dueDate || '';
   DOM.detailNotesInput.value = todo.notes || '';
+
+  // 设置优先级按钮状态
+  document.querySelectorAll('.priority-btn').forEach(btn => {
+    if (btn.dataset.priority === (todo.priority || 'none')) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // 自动调整标题高度
+  autoResizeTextarea();
 
   // 渲染子任务
   renderSubtasks(todo);

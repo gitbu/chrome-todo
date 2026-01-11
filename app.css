@@ -1056,3 +1056,324 @@ body {
 .completed-section.collapsed .completed-tasks {
   display: none;
 }
+
+/* ============= 右侧详情面板 - TickTick 风格 ============= */
+/* 重新定义详情面板样式 */
+.detail-form {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0;
+}
+
+.icon-action-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-action-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* 标题区域 */
+.detail-title-section {
+  display: flex;
+  gap: 12px;
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.checkbox-wrapper {
+  display: flex;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.detail-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  margin: 0;
+}
+
+.checkbox-custom {
+  display: none;
+}
+
+.detail-title-section .detail-title-input {
+  flex: 1;
+  border: none;
+  padding: 0;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.4;
+  resize: none;
+  min-height: 28px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.detail-title-section .detail-title-input:focus {
+  outline: none;
+  border: none;
+}
+
+/* 详情项列表 */
+.detail-items {
+  padding: 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid transparent;
+}
+
+.detail-item:hover {
+  background: var(--bg-hover);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-item-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.detail-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.detail-item-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.detail-item-value {
+  position: relative;
+}
+
+/* 日期输入 */
+.detail-date-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.detail-date-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* 日期快捷选项 */
+.date-shortcuts {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  overflow: hidden;
+}
+
+.date-shortcut {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.date-shortcut:hover {
+  background: var(--bg-hover);
+}
+
+/* 优先级按钮 */
+.priority-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.priority-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.priority-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+}
+
+.priority-btn.active {
+  background: var(--bg-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.priority-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border-color);
+}
+
+.priority-btn.priority-low .priority-dot {
+  background: #3498DB;
+}
+
+.priority-btn.priority-medium .priority-dot {
+  background: #F39C12;
+}
+
+.priority-btn.priority-high .priority-dot {
+  background: #E74C3C;
+}
+
+.priority-btn.priority-low.active {
+  border-color: #3498DB;
+  color: #3498DB;
+}
+
+.priority-btn.priority-medium.active {
+  border-color: #F39C12;
+  color: #F39C12;
+}
+
+.priority-btn.priority-high.active {
+  border-color: #E74C3C;
+  color: #E74C3C;
+}
+
+/* 列表选择 */
+.detail-list-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  background: var(--bg-primary);
+}
+
+.detail-list-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* 详情区域 */
+.detail-form .detail-section {
+  padding: 20px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0;
+}
+
+.section-header-with-action {
+  margin-bottom: 12px;
+}
+
+.detail-section .section-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* 备注文本框 */
+.detail-notes-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+  transition: border-color 0.2s;
+  line-height: 1.5;
+}
+
+.detail-notes-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* 底部删除按钮 */
+.detail-footer {
+  padding: 20px;
+  margin-top: auto;
+}
+
+.detail-footer .btn-delete {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  color: var(--danger-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.detail-footer .btn-delete:hover {
+  background: rgba(231, 76, 60, 0.1);
+  border-color: var(--danger-color);
+}

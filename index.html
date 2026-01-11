@@ -156,69 +156,92 @@
         </div>
 
         <div class="detail-form hidden" id="detailForm">
-          <!-- 关闭按钮 -->
+          <!-- 顶部操作栏 -->
           <div class="detail-header">
-            <button class="close-btn" id="closeDetailBtn">✕</button>
+            <button class="icon-action-btn close-btn" id="closeDetailBtn">✕</button>
           </div>
 
-          <!-- 标题编辑 -->
-          <div class="detail-section">
+          <!-- 完成状态 + 标题 -->
+          <div class="detail-title-section">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" id="detailCompletedCheckbox" class="detail-checkbox">
+              <span class="checkbox-custom"></span>
+            </label>
             <textarea
               class="detail-title-input"
               id="detailTitleInput"
               placeholder="待办事项标题..."
-              rows="2"
+              rows="1"
             ></textarea>
           </div>
 
-          <!-- 完成状态 -->
-          <div class="detail-section">
-            <label class="checkbox-label">
-              <input type="checkbox" id="detailCompletedCheckbox">
-              <span>标记为已完成</span>
-            </label>
+          <!-- 详情列表 -->
+          <div class="detail-items">
+            <!-- 截止日期 -->
+            <div class="detail-item" id="detailDateItem">
+              <div class="detail-item-icon">📅</div>
+              <div class="detail-item-content">
+                <div class="detail-item-label">截止日期</div>
+                <div class="detail-item-value">
+                  <input type="date" id="detailDateInput" class="detail-date-input">
+                  <div class="date-shortcuts hidden" id="dateShortcuts">
+                    <div class="date-shortcut" data-shortcut="today">今天</div>
+                    <div class="date-shortcut" data-shortcut="tomorrow">明天</div>
+                    <div class="date-shortcut" data-shortcut="nextWeek">下周</div>
+                    <div class="date-shortcut" data-shortcut="clear">清除</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 优先级 -->
+            <div class="detail-item" id="detailPriorityItem">
+              <div class="detail-item-icon">⭐</div>
+              <div class="detail-item-content">
+                <div class="detail-item-label">优先级</div>
+                <div class="detail-item-value">
+                  <div class="priority-buttons">
+                    <button class="priority-btn active" data-priority="none">
+                      <span class="priority-dot"></span>
+                      <span>无</span>
+                    </button>
+                    <button class="priority-btn priority-low" data-priority="low">
+                      <span class="priority-dot"></span>
+                      <span>低</span>
+                    </button>
+                    <button class="priority-btn priority-medium" data-priority="medium">
+                      <span class="priority-dot"></span>
+                      <span>中</span>
+                    </button>
+                    <button class="priority-btn priority-high" data-priority="high">
+                      <span class="priority-dot"></span>
+                      <span>高</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 列表 -->
+            <div class="detail-item" id="detailListItem">
+              <div class="detail-item-icon">📁</div>
+              <div class="detail-item-content">
+                <div class="detail-item-label">列表</div>
+                <div class="detail-item-value">
+                  <select id="detailListSelect" class="detail-list-select">
+                    <option value="">无列表</option>
+                    <!-- 列表选项动态插入 -->
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- 列表选择 -->
+          <!-- 子任务区域 -->
           <div class="detail-section">
-            <label class="section-label">列表</label>
-            <select id="detailTagSelect" class="detail-select">
-              <option value="">无列表</option>
-              <!-- 列表选项动态插入 -->
-            </select>
-          </div>
-
-          <!-- 优先级选择 -->
-          <div class="detail-section">
-            <label class="section-label">优先级</label>
-            <select id="detailPrioritySelect" class="detail-select">
-              <option value="none">无</option>
-              <option value="low">🔵 低</option>
-              <option value="medium">🟡 中</option>
-              <option value="high">🔴 高</option>
-            </select>
-          </div>
-
-          <!-- 日期设置 -->
-          <div class="detail-section">
-            <label class="section-label">截止日期</label>
-            <input type="date" id="detailDateInput" class="detail-input">
-          </div>
-
-          <!-- 备注 -->
-          <div class="detail-section">
-            <label class="section-label">备注</label>
-            <textarea
-              id="detailNotesInput"
-              class="detail-textarea"
-              placeholder="添加备注..."
-              rows="6"
-            ></textarea>
-          </div>
-
-          <!-- 子任务 -->
-          <div class="detail-section">
-            <label class="section-label">子任务</label>
+            <div class="section-header-with-action">
+              <label class="section-label">☑️ 子任务</label>
+            </div>
             <div class="subtasks-list" id="subtasksList">
               <!-- 子任务动态插入 -->
             </div>
@@ -233,9 +256,23 @@
             </div>
           </div>
 
-          <!-- 操作按钮 -->
-          <div class="detail-actions">
-            <button class="btn-danger" id="deleteTodoBtn">删除待办</button>
+          <!-- 备注 -->
+          <div class="detail-section">
+            <label class="section-label">📝 备注</label>
+            <textarea
+              id="detailNotesInput"
+              class="detail-notes-textarea"
+              placeholder="添加备注..."
+              rows="6"
+            ></textarea>
+          </div>
+
+          <!-- 删除按钮 -->
+          <div class="detail-footer">
+            <button class="btn-delete" id="deleteTodoBtn">
+              <span>🗑️</span>
+              <span>删除任务</span>
+            </button>
           </div>
         </div>
       </div>
