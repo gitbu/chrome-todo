@@ -21,6 +21,11 @@ const App = {
     workDuration: 25 * 60, // 25分钟
     breakDuration: 5 * 60, // 5分钟
     timerInterval: null
+  },
+  // 日历状态
+  calendar: {
+    currentYear: new Date().getFullYear(),
+    currentMonth: new Date().getMonth() // 0-11
   }
 };
 
@@ -63,6 +68,13 @@ const DOM = {
   completedHeader: document.getElementById('completedHeader'),
   completedCount: document.getElementById('completedCount'),
   completedTasks: document.getElementById('completedTasks'),
+
+  // 日历视图
+  calendarView: document.getElementById('calendarView'),
+  calendarTitle: document.getElementById('calendarTitle'),
+  calendarDays: document.getElementById('calendarDays'),
+  prevMonthBtn: document.getElementById('prevMonthBtn'),
+  nextMonthBtn: document.getElementById('nextMonthBtn'),
 
   // 详情面板
   detailPanel: document.getElementById('detailPanel'),
@@ -228,6 +240,10 @@ function setupEventListeners() {
   DOM.pauseTimerBtn.addEventListener('click', pausePomodoro);
   DOM.resetTimerBtn.addEventListener('click', resetPomodoro);
 
+  // 日历导航
+  DOM.prevMonthBtn.addEventListener('click', prevMonth);
+  DOM.nextMonthBtn.addEventListener('click', nextMonth);
+
   // 子任务
   DOM.addSubtaskBtn.addEventListener('click', addSubtask);
   DOM.newSubtaskInput.addEventListener('keypress', (e) => {
@@ -260,6 +276,8 @@ async function switchView(view, listId = null) {
     title = '明天';
   } else if (view === 'next7days') {
     title = '接下来7天';
+  } else if (view === 'calendar') {
+    title = '日历';
   } else if (view === 'list' && listId) {
     const list = App.lists.find(l => l.id === listId);
     title = list ? list.name : '列表';
@@ -273,7 +291,18 @@ async function switchView(view, listId = null) {
     DOM.statsPanel.classList.add('hidden');
   }
 
-  await renderTodos();
+  // 显示/隐藏日历视图
+  if (view === 'calendar') {
+    document.querySelector('.todos-wrapper').classList.add('hidden');
+    document.querySelector('.add-todo-form').classList.add('hidden');
+    DOM.calendarView.classList.remove('hidden');
+    renderCalendar();
+  } else {
+    document.querySelector('.todos-wrapper').classList.remove('hidden');
+    document.querySelector('.add-todo-form').classList.remove('hidden');
+    DOM.calendarView.classList.add('hidden');
+    await renderTodos();
+  }
 }
 
 // ============= UI 渲染 =============
@@ -983,6 +1012,128 @@ function updateTimerDisplay() {
   const minutes = Math.floor(App.pomodoro.timeRemaining / 60);
   const seconds = App.pomodoro.timeRemaining % 60;
   DOM.timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// ============= 日历视图 =============
+
+function prevMonth() {
+  App.calendar.currentMonth--;
+  if (App.calendar.currentMonth < 0) {
+    App.calendar.currentMonth = 11;
+    App.calendar.currentYear--;
+  }
+  renderCalendar();
+}
+
+function nextMonth() {
+  App.calendar.currentMonth++;
+  if (App.calendar.currentMonth > 11) {
+    App.calendar.currentMonth = 0;
+    App.calendar.currentYear++;
+  }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = App.calendar.currentYear;
+  const month = App.calendar.currentMonth;
+
+  // 更新标题
+  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+  DOM.calendarTitle.textContent = `${year}年${monthNames[month]}`;
+
+  // 获取当月第一天和最后一天
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+  const firstDayOfWeek = firstDay.getDay(); // 0-6 (Sunday-Saturday)
+
+  // 获取上个月的最后几天
+  const prevMonthLastDay = new Date(year, month, 0).getDate();
+  const prevMonthDays = firstDayOfWeek;
+
+  // 计算总共需要显示的天数（包括上个月和下个月的部分天数）
+  const totalDays = Math.ceil((daysInMonth + firstDayOfWeek) / 7) * 7;
+
+  // 获取所有任务
+  const todos = App.todos;
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  // 生成日历格子
+  let html = '';
+  for (let i = 0; i < totalDays; i++) {
+    let day, displayMonth, displayYear, dateStr;
+    let isOtherMonth = false;
+    let isToday = false;
+
+    if (i < prevMonthDays) {
+      // 上个月的天数
+      day = prevMonthLastDay - prevMonthDays + i + 1;
+      displayMonth = month === 0 ? 11 : month - 1;
+      displayYear = month === 0 ? year - 1 : year;
+      isOtherMonth = true;
+    } else if (i < prevMonthDays + daysInMonth) {
+      // 当前月的天数
+      day = i - prevMonthDays + 1;
+      displayMonth = month;
+      displayYear = year;
+    } else {
+      // 下个月的天数
+      day = i - prevMonthDays - daysInMonth + 1;
+      displayMonth = month === 11 ? 0 : month + 1;
+      displayYear = month === 11 ? year + 1 : year;
+      isOtherMonth = true;
+    }
+
+    dateStr = `${displayYear}-${String(displayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    isToday = dateStr === todayStr;
+
+    // 查找当天的任务
+    const dayTodos = todos.filter(todo => {
+      if (!todo.dueDate) return false;
+      return todo.dueDate.startsWith(dateStr);
+    });
+
+    const hasTasks = dayTodos.length > 0;
+    const taskCount = dayTodos.filter(t => !t.completed).length;
+
+    html += `
+      <div class="calendar-day ${isOtherMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${hasTasks ? 'has-tasks' : ''}"
+           data-date="${dateStr}">
+        <div class="day-number">${day}</div>
+        ${taskCount > 0 ? `<span class="task-count">${taskCount}</span>` : ''}
+        ${hasTasks && !isOtherMonth ? '<div class="day-tasks">' + dayTodos.slice(0, 2).map(() => '<span class="task-dot"></span>').join('') + '</div>' : ''}
+      </div>
+    `;
+  }
+
+  DOM.calendarDays.innerHTML = html;
+
+  // 绑定点击事件
+  DOM.calendarDays.querySelectorAll('.calendar-day').forEach(dayEl => {
+    dayEl.addEventListener('click', () => {
+      const date = dayEl.dataset.date;
+      showDayTasks(date);
+    });
+  });
+}
+
+async function showDayTasks(date) {
+  // 可以在这里打开一个模态框显示当天的任务
+  // 或者切换到一个特定日期的视图
+  // 暂时使用alert显示
+  const dayTodos = App.todos.filter(todo => {
+    if (!todo.dueDate) return false;
+    return todo.dueDate.startsWith(date);
+  });
+
+  if (dayTodos.length === 0) {
+    alert(`${date} 没有任务`);
+  } else {
+    const taskList = dayTodos.map(t => `${t.completed ? '✓' : '○'} ${t.title}`).join('\n');
+    alert(`${date} 的任务:\n\n${taskList}`);
+  }
 }
 
 // ============= 详情面板 =============
