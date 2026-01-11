@@ -32,6 +32,10 @@ const Storage = {
       dueDate: options.dueDate || null,
       notes: options.notes || '',
       priority: options.priority || 'none', // none, low, medium, high
+      repeat: options.repeat || null, // { type: 'daily'|'weekly'|'monthly'|'yearly', interval: 1, weekdays: [] }
+      reminders: options.reminders || [], // [{ time: '09:00', enabled: true }]
+      tags: options.tags || [], // ['工作', '重要']
+      pomodoroCount: options.pomodoroCount || 0, // 完成的番茄钟数量
       subtasks: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -467,5 +471,103 @@ const Storage = {
       }
     }
     return false;
+  },
+
+  // ============= 重复任务处理 =============
+
+  // 计算重复任务的下一个日期
+  calculateNextRepeatDate(currentDate, repeat) {
+    if (!repeat || !currentDate) return null;
+
+    const date = new Date(currentDate);
+    const { type, interval = 1, weekdays = [] } = repeat;
+
+    switch (type) {
+      case 'daily':
+        date.setDate(date.getDate() + interval);
+        break;
+
+      case 'weekly':
+        // 如果指定了星期几
+        if (weekdays && weekdays.length > 0) {
+          const currentDay = date.getDay();
+          // 找到下一个匹配的星期几
+          let found = false;
+          for (let i = 1; i <= 7; i++) {
+            const nextDay = (currentDay + i) % 7;
+            if (weekdays.includes(nextDay)) {
+              date.setDate(date.getDate() + i);
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            date.setDate(date.getDate() + 7 * interval);
+          }
+        } else {
+          date.setDate(date.getDate() + 7 * interval);
+        }
+        break;
+
+      case 'monthly':
+        date.setMonth(date.getMonth() + interval);
+        break;
+
+      case 'yearly':
+        date.setFullYear(date.getFullYear() + interval);
+        break;
+    }
+
+    return date.toISOString().split('T')[0];
+  },
+
+  // 完成重复任务时创建新实例
+  async completeRepeatTodo(todoId) {
+    const todo = await this.getTodo(todoId);
+    if (!todo || !todo.repeat) return null;
+
+    // 标记当前任务为完成
+    await this.toggleTodo(todoId);
+
+    // 计算下一个日期
+    const nextDate = this.calculateNextRepeatDate(todo.dueDate, todo.repeat);
+    if (!nextDate) return null;
+
+    // 创建新的重复任务
+    const newTodo = await this.addTodo(todo.title, {
+      listId: todo.listId,
+      dueDate: nextDate,
+      notes: todo.notes,
+      priority: todo.priority,
+      repeat: todo.repeat,
+      reminders: todo.reminders,
+      tags: todo.tags
+    });
+
+    return newTodo;
+  },
+
+  // ============= 标签管理 =============
+
+  // 获取所有标签
+  async getAllTags() {
+    const todos = await this.getTodos();
+    const tagsSet = new Set();
+
+    todos.forEach(todo => {
+      if (todo.tags && Array.isArray(todo.tags)) {
+        todo.tags.forEach(tag => tagsSet.add(tag));
+      }
+    });
+
+    return Array.from(tagsSet).sort();
+  },
+
+  // 获取带某个标签的所有任务
+  async getTodosByTag(tagName) {
+    const todos = await this.getTodos();
+    return todos.filter(todo =>
+      todo.tags && todo.tags.includes(tagName)
+    );
   }
 };

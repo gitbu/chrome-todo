@@ -289,6 +289,25 @@
             </div>
           </div>
 
+          <!-- 番茄钟 -->
+          <div class="detail-section pomodoro-section">
+            <div class="section-header-with-action">
+              <label class="section-label">🍅 番茄钟</label>
+              <div class="pomodoro-count">
+                已完成: <span id="pomodoroCount">0</span>
+              </div>
+            </div>
+            <div class="pomodoro-timer">
+              <div class="timer-display" id="timerDisplay">25:00</div>
+              <div class="timer-mode" id="timerMode">工作时间</div>
+              <div class="timer-controls">
+                <button class="btn-timer" id="startTimerBtn">开始</button>
+                <button class="btn-timer" id="pauseTimerBtn" style="display: none;">暂停</button>
+                <button class="btn-timer-secondary" id="resetTimerBtn">重置</button>
+              </div>
+            </div>
+          </div>
+
           <!-- 子任务区域 -->
           <div class="detail-section">
             <div class="section-header-with-action">

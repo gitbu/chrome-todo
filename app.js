@@ -12,7 +12,16 @@ const App = {
   quickPriority: 'none', // 快速添加的优先级
   quickList: null, // 快速添加的列表
   todos: [],
-  lists: []
+  lists: [],
+  // 番茄钟状态
+  pomodoro: {
+    timeRemaining: 25 * 60, // 秒
+    isRunning: false,
+    isWorkMode: true, // true=工作时间, false=休息时间
+    workDuration: 25 * 60, // 25分钟
+    breakDuration: 5 * 60, // 5分钟
+    timerInterval: null
+  }
 };
 
 // DOM 元素
@@ -73,6 +82,14 @@ const DOM = {
   addReminderBtn: document.getElementById('addReminderBtn'),
   tagsDisplay: document.getElementById('tagsDisplay'),
   newTagInput: document.getElementById('newTagInput'),
+
+  // 番茄钟
+  pomodoroCount: document.getElementById('pomodoroCount'),
+  timerDisplay: document.getElementById('timerDisplay'),
+  timerMode: document.getElementById('timerMode'),
+  startTimerBtn: document.getElementById('startTimerBtn'),
+  pauseTimerBtn: document.getElementById('pauseTimerBtn'),
+  resetTimerBtn: document.getElementById('resetTimerBtn'),
 
   // 子任务
   subtasksList: document.getElementById('subtasksList'),
@@ -205,6 +222,11 @@ function setupEventListeners() {
       DOM.sortMenu.classList.add('hidden');
     }
   });
+
+  // 番茄钟
+  DOM.startTimerBtn.addEventListener('click', startPomodoro);
+  DOM.pauseTimerBtn.addEventListener('click', pausePomodoro);
+  DOM.resetTimerBtn.addEventListener('click', resetPomodoro);
 
   // 子任务
   DOM.addSubtaskBtn.addEventListener('click', addSubtask);
@@ -876,6 +898,93 @@ function renderTags(todo) {
   `).join('');
 }
 
+// ============= 番茄钟计时器 =============
+
+function startPomodoro() {
+  if (!App.selectedTodoId) return;
+
+  App.pomodoro.isRunning = true;
+
+  // 切换按钮显示
+  DOM.startTimerBtn.style.display = 'none';
+  DOM.pauseTimerBtn.style.display = 'inline-block';
+
+  // 启动计时器
+  App.pomodoro.timerInterval = setInterval(timerTick, 1000);
+}
+
+function pausePomodoro() {
+  App.pomodoro.isRunning = false;
+
+  // 切换按钮显示
+  DOM.startTimerBtn.style.display = 'inline-block';
+  DOM.pauseTimerBtn.style.display = 'none';
+
+  // 停止计时器
+  if (App.pomodoro.timerInterval) {
+    clearInterval(App.pomodoro.timerInterval);
+    App.pomodoro.timerInterval = null;
+  }
+}
+
+function resetPomodoro() {
+  pausePomodoro();
+
+  // 重置时间
+  App.pomodoro.isWorkMode = true;
+  App.pomodoro.timeRemaining = App.pomodoro.workDuration;
+
+  updateTimerDisplay();
+}
+
+function timerTick() {
+  if (!App.pomodoro.isRunning) return;
+
+  App.pomodoro.timeRemaining--;
+
+  if (App.pomodoro.timeRemaining <= 0) {
+    completePomodoro();
+  } else {
+    updateTimerDisplay();
+  }
+}
+
+async function completePomodoro() {
+  pausePomodoro();
+
+  if (App.pomodoro.isWorkMode) {
+    // 工作时间结束，增加计数
+    if (App.selectedTodoId) {
+      const todo = await Storage.getTodo(App.selectedTodoId);
+      const newCount = (todo.pomodoroCount || 0) + 1;
+      await Storage.updateTodo(App.selectedTodoId, { pomodoroCount: newCount });
+      DOM.pomodoroCount.textContent = newCount;
+    }
+
+    // 切换到休息时间
+    App.pomodoro.isWorkMode = false;
+    App.pomodoro.timeRemaining = App.pomodoro.breakDuration;
+    DOM.timerMode.textContent = '休息时间';
+
+    alert('🎉 番茄钟完成！休息一下吧！');
+  } else {
+    // 休息时间结束，切换回工作时间
+    App.pomodoro.isWorkMode = true;
+    App.pomodoro.timeRemaining = App.pomodoro.workDuration;
+    DOM.timerMode.textContent = '工作时间';
+
+    alert('⏰ 休息结束！继续加油！');
+  }
+
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay() {
+  const minutes = Math.floor(App.pomodoro.timeRemaining / 60);
+  const seconds = App.pomodoro.timeRemaining % 60;
+  DOM.timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
+
 // ============= 详情面板 =============
 
 async function openDetailPanel(todoId) {
@@ -914,6 +1023,12 @@ async function openDetailPanel(todoId) {
   // 渲染标签
   renderTags(todo);
 
+  // 加载番茄钟计数
+  DOM.pomodoroCount.textContent = todo.pomodoroCount || 0;
+
+  // 重置番茄钟计时器
+  resetPomodoro();
+
   // 自动调整标题高度
   autoResizeTextarea();
 
@@ -927,6 +1042,9 @@ async function openDetailPanel(todoId) {
 
 function closeDetailPanel() {
   App.selectedTodoId = null;
+
+  // 暂停番茄钟
+  pausePomodoro();
 
   // 清除激活状态
   document.querySelectorAll('.todo-item').forEach(item => {
