@@ -67,6 +67,13 @@ const DOM = {
   closeDetailBtn: document.getElementById('closeDetailBtn'),
   deleteTodoBtn: document.getElementById('deleteTodoBtn'),
 
+  // 高级功能
+  detailRepeatSelect: document.getElementById('detailRepeatSelect'),
+  remindersList: document.getElementById('remindersList'),
+  addReminderBtn: document.getElementById('addReminderBtn'),
+  tagsDisplay: document.getElementById('tagsDisplay'),
+  newTagInput: document.getElementById('newTagInput'),
+
   // 子任务
   subtasksList: document.getElementById('subtasksList'),
   newSubtaskInput: document.getElementById('newSubtaskInput'),
@@ -117,10 +124,36 @@ function setupEventListeners() {
   // 详情输入变化 - 自动保存
   DOM.detailTitleInput.addEventListener('blur', updateSelectedTodo);
   DOM.detailTitleInput.addEventListener('input', autoResizeTextarea);
-  DOM.detailCompletedCheckbox.addEventListener('change', updateSelectedTodo);
+  DOM.detailCompletedCheckbox.addEventListener('change', async () => {
+    if (!App.selectedTodoId) return;
+
+    const todo = await Storage.getTodo(App.selectedTodoId);
+    const wasCompleted = todo.completed;
+    const nowCompleted = DOM.detailCompletedCheckbox.checked;
+
+    // 如果是重复任务且从未完成变为完成
+    if (todo.repeat && !wasCompleted && nowCompleted) {
+      await Storage.completeRepeatTodo(App.selectedTodoId);
+      closeDetailPanel(); // 关闭详情面板因为创建了新任务
+      await updateUI();
+    } else {
+      await Storage.toggleTodo(App.selectedTodoId);
+      await updateUI();
+    }
+  });
   DOM.detailListSelect.addEventListener('change', updateSelectedTodo);
   DOM.detailDateInput.addEventListener('change', updateSelectedTodo);
   DOM.detailNotesInput.addEventListener('blur', updateSelectedTodo);
+
+  // 高级功能 - 重复、提醒、标签
+  DOM.detailRepeatSelect.addEventListener('change', updateRepeat);
+  DOM.addReminderBtn.addEventListener('click', addReminder);
+  DOM.newTagInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
+  });
 
   // 优先级按钮
   document.querySelectorAll('.priority-btn').forEach(btn => {
@@ -465,12 +498,23 @@ async function renderTodos() {
       const checkbox = item.querySelector('.todo-checkbox');
       checkbox.addEventListener('click', async (e) => {
         e.stopPropagation();
-        await Storage.toggleTodo(todoId);
+
+        // 检查是否是重复任务
+        const todo = await Storage.getTodo(todoId);
+        if (todo && !todo.completed && todo.repeat) {
+          // 重复任务完成时创建新实例
+          await Storage.completeRepeatTodo(todoId);
+        } else {
+          await Storage.toggleTodo(todoId);
+        }
+
         await updateUI();
         // 如果当前正在编辑这个待办，更新详情面板
         if (App.selectedTodoId === todoId) {
-          const todo = await Storage.getTodo(todoId);
-          DOM.detailCompletedCheckbox.checked = todo.completed;
+          const updatedTodo = await Storage.getTodo(todoId);
+          if (updatedTodo) {
+            DOM.detailCompletedCheckbox.checked = updatedTodo.completed;
+          }
         }
       });
 
@@ -714,6 +758,124 @@ async function deleteTodo() {
   }
 }
 
+// ============= 高级功能 - 重复、提醒、标签 =============
+
+async function updateRepeat() {
+  if (!App.selectedTodoId) return;
+
+  const repeatType = DOM.detailRepeatSelect.value;
+  const repeat = repeatType ? { type: repeatType, interval: 1 } : null;
+
+  await Storage.updateTodo(App.selectedTodoId, { repeat });
+  await updateUI();
+}
+
+async function addReminder() {
+  if (!App.selectedTodoId) return;
+
+  const time = prompt('请输入提醒时间 (格式: HH:MM):', '09:00');
+  if (!time || !time.trim()) return;
+
+  // 验证时间格式
+  const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
+  if (!timeRegex.test(time.trim())) {
+    alert('时间格式不正确，请使用 HH:MM 格式');
+    return;
+  }
+
+  const todo = await Storage.getTodo(App.selectedTodoId);
+  const reminders = [...(todo.reminders || []), { time: time.trim(), enabled: true }];
+
+  await Storage.updateTodo(App.selectedTodoId, { reminders });
+  await openDetailPanel(App.selectedTodoId); // 重新加载详情
+}
+
+async function toggleReminder(index) {
+  if (!App.selectedTodoId) return;
+
+  const todo = await Storage.getTodo(App.selectedTodoId);
+  const reminders = [...todo.reminders];
+  reminders[index].enabled = !reminders[index].enabled;
+
+  await Storage.updateTodo(App.selectedTodoId, { reminders });
+  await openDetailPanel(App.selectedTodoId); // 重新加载详情
+}
+
+async function deleteReminder(index) {
+  if (!App.selectedTodoId) return;
+
+  const todo = await Storage.getTodo(App.selectedTodoId);
+  const reminders = todo.reminders.filter((_, i) => i !== index);
+
+  await Storage.updateTodo(App.selectedTodoId, { reminders });
+  await openDetailPanel(App.selectedTodoId); // 重新加载详情
+}
+
+async function addTag() {
+  if (!App.selectedTodoId) return;
+
+  const tagName = DOM.newTagInput.value.trim();
+  if (!tagName) return;
+
+  const todo = await Storage.getTodo(App.selectedTodoId);
+  const tags = [...(todo.tags || [])];
+
+  // 避免重复标签
+  if (tags.includes(tagName)) {
+    DOM.newTagInput.value = '';
+    return;
+  }
+
+  tags.push(tagName);
+  await Storage.updateTodo(App.selectedTodoId, { tags });
+
+  DOM.newTagInput.value = '';
+  await openDetailPanel(App.selectedTodoId); // 重新加载详情
+}
+
+async function removeTag(tagName) {
+  if (!App.selectedTodoId) return;
+
+  const todo = await Storage.getTodo(App.selectedTodoId);
+  const tags = todo.tags.filter(t => t !== tagName);
+
+  await Storage.updateTodo(App.selectedTodoId, { tags });
+  await openDetailPanel(App.selectedTodoId); // 重新加载详情
+}
+
+function renderReminders(todo) {
+  const reminders = todo.reminders || [];
+
+  if (reminders.length === 0) {
+    DOM.remindersList.innerHTML = '';
+    return;
+  }
+
+  DOM.remindersList.innerHTML = reminders.map((reminder, index) => `
+    <div class="reminder-item">
+      <span class="reminder-time">${escapeHtml(reminder.time)}</span>
+      <div class="reminder-toggle ${reminder.enabled ? 'active' : ''}" onclick="toggleReminder(${index})"></div>
+      <button class="reminder-delete" onclick="deleteReminder(${index})">✕</button>
+    </div>
+  `).join('');
+}
+
+function renderTags(todo) {
+  const tags = todo.tags || [];
+
+  if (tags.length === 0) {
+    DOM.tagsDisplay.innerHTML = '';
+    return;
+  }
+
+  DOM.tagsDisplay.innerHTML = tags.map(tag => `
+    <div class="tag-chip">
+      <span>${escapeHtml(tag)}</span>
+      <span class="tag-chip-remove" onclick="removeTag('${escapeHtml(tag)}')">×</span>
+    </div>
+  `).join('');
+}
+
 // ============= 详情面板 =============
 
 async function openDetailPanel(todoId) {
@@ -742,6 +904,15 @@ async function openDetailPanel(todoId) {
       btn.classList.remove('active');
     }
   });
+
+  // 设置重复选项
+  DOM.detailRepeatSelect.value = todo.repeat ? todo.repeat.type : '';
+
+  // 渲染提醒
+  renderReminders(todo);
+
+  // 渲染标签
+  renderTags(todo);
 
   // 自动调整标题高度
   autoResizeTextarea();

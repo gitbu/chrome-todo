@@ -235,6 +235,58 @@
                 </div>
               </div>
             </div>
+
+            <!-- 重复 -->
+            <div class="detail-item" id="detailRepeatItem">
+              <div class="detail-item-icon">🔄</div>
+              <div class="detail-item-content">
+                <div class="detail-item-label">重复</div>
+                <div class="detail-item-value">
+                  <select id="detailRepeatSelect" class="detail-repeat-select">
+                    <option value="">不重复</option>
+                    <option value="daily">每天</option>
+                    <option value="weekly">每周</option>
+                    <option value="monthly">每月</option>
+                    <option value="yearly">每年</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- 提醒 -->
+            <div class="detail-item" id="detailRemindersItem">
+              <div class="detail-item-icon">🔔</div>
+              <div class="detail-item-content">
+                <div class="detail-item-label">提醒</div>
+                <div class="detail-item-value">
+                  <div class="reminders-list" id="remindersList">
+                    <!-- 提醒项动态插入 -->
+                  </div>
+                  <button class="btn-add-reminder" id="addReminderBtn">+ 添加提醒</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 标签 -->
+            <div class="detail-item" id="detailTagsItem">
+              <div class="detail-item-icon">🏷️</div>
+              <div class="detail-item-content">
+                <div class="detail-item-label">标签</div>
+                <div class="detail-item-value">
+                  <div class="tags-display" id="tagsDisplay">
+                    <!-- 标签动态插入 -->
+                  </div>
+                  <div class="tag-input-wrapper">
+                    <input
+                      type="text"
+                      id="newTagInput"
+                      class="tag-input"
+                      placeholder="添加标签..."
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 子任务区域 -->

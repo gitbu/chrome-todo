@@ -1311,6 +1311,157 @@ body {
   border-color: var(--primary-color);
 }
 
+/* 重复选择器 */
+.detail-repeat-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  background: var(--bg-primary);
+}
+
+.detail-repeat-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* 提醒列表 */
+.reminders-list {
+  margin-bottom: 12px;
+}
+
+.reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.reminder-time {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.reminder-toggle {
+  width: 40px;
+  height: 20px;
+  background: var(--border-color);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.reminder-toggle.active {
+  background: var(--primary-color);
+}
+
+.reminder-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.reminder-toggle.active::after {
+  transform: translateX(20px);
+}
+
+.reminder-delete {
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 16px;
+  transition: color 0.2s;
+}
+
+.reminder-delete:hover {
+  color: var(--danger-color);
+}
+
+.btn-add-reminder {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-add-reminder:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* 标签显示 */
+.tags-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  min-height: 28px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.tag-chip-remove {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-weight: bold;
+  transition: color 0.2s;
+}
+
+.tag-chip-remove:hover {
+  color: var(--danger-color);
+}
+
+.tag-input-wrapper {
+  width: 100%;
+}
+
+.tag-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.tag-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
 /* 详情区域 */
 .detail-form .detail-section {
   padding: 20px;
