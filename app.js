@@ -3,28 +3,32 @@
 // 应用状态
 const App = {
   currentView: 'home',
-  currentTagId: null,
+  currentListId: null,
   selectedTodoId: null,
   searchQuery: '',
+  showCompleted: true,
   todos: [],
-  tags: []
+  lists: []
 };
 
 // DOM 元素
 const DOM = {
   // 导航
   navItems: document.querySelectorAll('.nav-item'),
-  tagsList: document.getElementById('tagsList'),
-  addTagBtn: document.getElementById('addTagBtn'),
+  listsList: document.getElementById('tagsList'), // 元素ID保持不变，但语义改为列表
+  addListBtn: document.getElementById('addTagBtn'),
 
   // 计数
   homeCount: document.getElementById('homeCount'),
   todayCount: document.getElementById('todayCount'),
+  tomorrowCount: document.getElementById('tomorrowCount'),
+  next7daysCount: document.getElementById('next7daysCount'),
 
   // 头部
   viewTitle: document.getElementById('viewTitle'),
   searchInput: document.getElementById('searchInput'),
   clearSearchBtn: document.getElementById('clearSearchBtn'),
+  toggleCompletedBtn: document.getElementById('toggleCompletedBtn'),
 
   // 统计面板
   statsPanel: document.getElementById('statsPanel'),
@@ -45,7 +49,8 @@ const DOM = {
   detailForm: document.getElementById('detailForm'),
   detailTitleInput: document.getElementById('detailTitleInput'),
   detailCompletedCheckbox: document.getElementById('detailCompletedCheckbox'),
-  detailTagSelect: document.getElementById('detailTagSelect'),
+  detailListSelect: document.getElementById('detailTagSelect'), // 元素ID保持不变
+  detailPrioritySelect: document.getElementById('detailPrioritySelect'),
   detailDateInput: document.getElementById('detailDateInput'),
   detailNotesInput: document.getElementById('detailNotesInput'),
   closeDetailBtn: document.getElementById('closeDetailBtn'),
@@ -67,7 +72,7 @@ async function init() {
 
 async function loadData() {
   App.todos = await Storage.getTodos();
-  App.tags = await Storage.getTags();
+  App.lists = await Storage.getLists();
 }
 
 function setupEventListeners() {
@@ -81,8 +86,8 @@ function setupEventListeners() {
     });
   });
 
-  // 添加标签
-  DOM.addTagBtn.addEventListener('click', addTag);
+  // 添加列表
+  DOM.addListBtn.addEventListener('click', addList);
 
   // 添加待办
   DOM.addTodoBtn.addEventListener('click', addTodo);
@@ -97,13 +102,17 @@ function setupEventListeners() {
   // 详情输入变化 - 自动保存
   DOM.detailTitleInput.addEventListener('blur', updateSelectedTodo);
   DOM.detailCompletedCheckbox.addEventListener('change', updateSelectedTodo);
-  DOM.detailTagSelect.addEventListener('change', updateSelectedTodo);
+  DOM.detailListSelect.addEventListener('change', updateSelectedTodo);
+  DOM.detailPrioritySelect.addEventListener('change', updateSelectedTodo);
   DOM.detailDateInput.addEventListener('change', updateSelectedTodo);
   DOM.detailNotesInput.addEventListener('blur', updateSelectedTodo);
 
   // 搜索功能
   DOM.searchInput.addEventListener('input', handleSearch);
   DOM.clearSearchBtn.addEventListener('click', clearSearch);
+
+  // 切换显示/隐藏已完成
+  DOM.toggleCompletedBtn.addEventListener('click', toggleShowCompleted);
 
   // 子任务
   DOM.addSubtaskBtn.addEventListener('click', addSubtask);
@@ -114,17 +123,17 @@ function setupEventListeners() {
 
 // ============= 视图切换 =============
 
-async function switchView(view, tagId = null) {
+async function switchView(view, listId = null) {
   App.currentView = view;
-  App.currentTagId = tagId;
+  App.currentListId = listId;
 
   // 更新导航激活状态
-  document.querySelectorAll('.nav-item, .tag-item').forEach(item => {
+  document.querySelectorAll('.nav-item, .list-item').forEach(item => {
     item.classList.remove('active');
   });
 
-  if (tagId) {
-    document.querySelector(`.tag-item[data-id="${tagId}"]`)?.classList.add('active');
+  if (listId) {
+    document.querySelector(`.list-item[data-id="${listId}"]`)?.classList.add('active');
   } else {
     document.querySelector(`.nav-item[data-view="${view}"]`)?.classList.add('active');
   }
@@ -133,9 +142,13 @@ async function switchView(view, tagId = null) {
   let title = '首页';
   if (view === 'today') {
     title = '今天';
-  } else if (view === 'tag' && tagId) {
-    const tag = App.tags.find(t => t.id === tagId);
-    title = tag ? tag.name : '标签';
+  } else if (view === 'tomorrow') {
+    title = '明天';
+  } else if (view === 'next7days') {
+    title = '接下来7天';
+  } else if (view === 'list' && listId) {
+    const list = App.lists.find(l => l.id === listId);
+    title = list ? list.name : '列表';
   }
   DOM.viewTitle.textContent = title;
 
@@ -153,9 +166,9 @@ async function switchView(view, tagId = null) {
 
 async function updateUI() {
   await updateStats();
-  await renderTags();
+  await renderLists();
   await renderTodos();
-  updateTagSelect();
+  updateListSelect();
 }
 
 async function updateStats() {
@@ -163,6 +176,8 @@ async function updateStats() {
 
   DOM.homeCount.textContent = stats.pending;
   DOM.todayCount.textContent = stats.today;
+  DOM.tomorrowCount.textContent = stats.tomorrow;
+  DOM.next7daysCount.textContent = stats.next7days;
 
   DOM.totalTasks.textContent = stats.total;
   DOM.pendingTasks.textContent = stats.pending;
@@ -170,50 +185,69 @@ async function updateStats() {
   DOM.todayTasks.textContent = stats.today;
 }
 
-async function renderTags() {
-  App.tags = await Storage.getTags();
-  const tagStats = await Storage.getTagStats();
+async function renderLists() {
+  App.lists = await Storage.getLists();
+  const listStats = await Storage.getListStats();
 
-  if (App.tags.length === 0) {
-    DOM.tagsList.innerHTML = `
+  if (App.lists.length === 0) {
+    DOM.listsList.innerHTML = `
       <div style="padding: 8px 20px; font-size: 13px; color: var(--text-secondary);">
-        暂无标签
+        暂无列表
       </div>
     `;
     return;
   }
 
-  DOM.tagsList.innerHTML = App.tags.map(tag => {
-    const stats = tagStats[tag.id] || { total: 0 };
-    return `
-      <div class="tag-item" data-id="${tag.id}">
-        <span class="tag-color" style="background: ${tag.color};"></span>
-        <span class="tag-name">${escapeHtml(tag.name)}</span>
+  // 构建层级结构
+  const topLevelLists = App.lists.filter(list => !list.parentId);
+
+  function renderListItem(list, level = 0) {
+    const stats = listStats[list.id] || { total: 0 };
+    const childLists = App.lists.filter(l => l.parentId === list.id);
+    const hasChildren = childLists.length > 0;
+    const indent = level * 16;
+
+    let html = `
+      <div class="list-item" data-id="${list.id}" style="padding-left: ${20 + indent}px;">
+        ${hasChildren ? '<span class="list-toggle">▼</span>' : '<span class="list-toggle-empty"></span>'}
+        <span class="tag-color" style="background: ${list.color};"></span>
+        <span class="tag-name">${escapeHtml(list.name)}</span>
         <span class="nav-count">${stats.total}</span>
         <div class="tag-actions">
-          <button class="icon-btn-tiny delete-tag" data-id="${tag.id}">×</button>
+          <button class="icon-btn-tiny delete-list" data-id="${list.id}">×</button>
         </div>
       </div>
     `;
-  }).join('');
 
-  // 绑定标签点击事件
-  DOM.tagsList.querySelectorAll('.tag-item').forEach(item => {
+    // 递归渲染子列表
+    if (hasChildren) {
+      childLists.forEach(child => {
+        html += renderListItem(child, level + 1);
+      });
+    }
+
+    return html;
+  }
+
+  DOM.listsList.innerHTML = topLevelLists.map(list => renderListItem(list)).join('');
+
+  // 绑定列表点击事件
+  DOM.listsList.querySelectorAll('.list-item').forEach(item => {
     item.addEventListener('click', (e) => {
-      if (!e.target.classList.contains('delete-tag')) {
-        switchView('tag', item.dataset.id);
+      if (!e.target.classList.contains('delete-list') && !e.target.classList.contains('list-toggle')) {
+        switchView('list', item.dataset.id);
       }
     });
   });
 
-  // 绑定删除标签事件
-  DOM.tagsList.querySelectorAll('.delete-tag').forEach(btn => {
+  // 绑定删除列表事件
+  DOM.listsList.querySelectorAll('.delete-list').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      const tagId = btn.dataset.id;
-      if (confirm('确定要删除这个标签吗？')) {
-        await Storage.deleteTag(tagId);
-        if (App.currentTagId === tagId) {
+      const listId = btn.dataset.id;
+      if (confirm('确定要删除这个列表及其子列表吗？')) {
+        await Storage.deleteList(listId);
+        if (App.currentListId === listId) {
           switchView('home');
         }
         await updateUI();
@@ -230,8 +264,12 @@ async function renderTodos() {
     todos = await Storage.getTodos();
   } else if (App.currentView === 'today') {
     todos = await Storage.getTodayTodos();
-  } else if (App.currentView === 'tag' && App.currentTagId) {
-    todos = await Storage.getTodosByTag(App.currentTagId);
+  } else if (App.currentView === 'tomorrow') {
+    todos = await Storage.getTomorrowTodos();
+  } else if (App.currentView === 'next7days') {
+    todos = await Storage.getNext7DaysTodos();
+  } else if (App.currentView === 'list' && App.currentListId) {
+    todos = await Storage.getTodosByList(App.currentListId);
   }
 
   // 应用搜索过滤
@@ -242,6 +280,11 @@ async function renderTodos() {
       const notesMatch = todo.notes && todo.notes.toLowerCase().includes(query);
       return titleMatch || notesMatch;
     });
+  }
+
+  // 应用已完成任务过滤
+  if (!App.showCompleted) {
+    todos = todos.filter(todo => !todo.completed);
   }
 
   App.todos = todos;
@@ -285,9 +328,18 @@ async function renderTodos() {
   }
 
   DOM.todosContainer.innerHTML = todos.map(todo => {
-    const tag = todo.tagId ? App.tags.find(t => t.id === todo.tagId) : null;
+    const list = todo.listId ? App.lists.find(l => l.id === todo.listId) : null;
     const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
     const isActive = App.selectedTodoId === todo.id;
+
+    // 优先级标识
+    const priorityMap = {
+      high: { icon: '🔴', class: 'priority-high' },
+      medium: { icon: '🟡', class: 'priority-medium' },
+      low: { icon: '🔵', class: 'priority-low' },
+      none: { icon: '', class: '' }
+    };
+    const priority = priorityMap[todo.priority || 'none'];
 
     // 计算子任务进度（递归）
     let subtaskProgress = '';
@@ -301,15 +353,18 @@ async function renderTodos() {
     }
 
     return `
-      <div class="todo-item ${todo.completed ? 'completed' : ''} ${isActive ? 'active' : ''}" data-id="${todo.id}">
+      <div class="todo-item ${todo.completed ? 'completed' : ''} ${isActive ? 'active' : ''} ${priority.class}" data-id="${todo.id}">
         <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
         <div class="todo-content">
-          <div class="todo-title">${escapeHtml(todo.title)}</div>
+          <div class="todo-title">
+            ${priority.icon ? `<span class="priority-icon">${priority.icon}</span>` : ''}
+            ${escapeHtml(todo.title)}
+          </div>
           <div class="todo-meta">
-            ${tag ? `
+            ${list ? `
               <span class="todo-tag">
-                <span class="tag-color" style="background: ${tag.color}; width: 8px; height: 8px; border-radius: 50%;"></span>
-                ${escapeHtml(tag.name)}
+                <span class="tag-color" style="background: ${list.color}; width: 8px; height: 8px; border-radius: 50%;"></span>
+                ${escapeHtml(list.name)}
               </span>
             ` : ''}
             ${todo.dueDate ? `
@@ -356,14 +411,21 @@ async function addTodo() {
 
   const options = {};
 
-  // 如果在标签视图下，自动设置标签
-  if (App.currentView === 'tag' && App.currentTagId) {
-    options.tagId = App.currentTagId;
+  // 如果在列表视图下，自动设置列表
+  if (App.currentView === 'list' && App.currentListId) {
+    options.listId = App.currentListId;
   }
 
   // 如果在今天视图下，自动设置日期为今天
   if (App.currentView === 'today') {
     options.dueDate = new Date().toISOString().split('T')[0];
+  }
+
+  // 如果在明天视图下，自动设置日期为明天
+  if (App.currentView === 'tomorrow') {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    options.dueDate = tomorrow.toISOString().split('T')[0];
   }
 
   await Storage.addTodo(title, options);
@@ -377,7 +439,8 @@ async function updateSelectedTodo() {
   const updates = {
     title: DOM.detailTitleInput.value.trim(),
     completed: DOM.detailCompletedCheckbox.checked,
-    tagId: DOM.detailTagSelect.value || null,
+    listId: DOM.detailListSelect.value || null,
+    priority: DOM.detailPrioritySelect.value || 'none',
     dueDate: DOM.detailDateInput.value || null,
     notes: DOM.detailNotesInput.value.trim()
   };
@@ -412,7 +475,8 @@ async function openDetailPanel(todoId) {
   // 填充表单
   DOM.detailTitleInput.value = todo.title;
   DOM.detailCompletedCheckbox.checked = todo.completed;
-  DOM.detailTagSelect.value = todo.tagId || '';
+  DOM.detailListSelect.value = todo.listId || '';
+  DOM.detailPrioritySelect.value = todo.priority || 'none';
   DOM.detailDateInput.value = todo.dueDate || '';
   DOM.detailNotesInput.value = todo.notes || '';
 
@@ -437,29 +501,29 @@ function closeDetailPanel() {
   document.querySelector('.detail-empty').classList.remove('hidden');
 }
 
-// ============= 标签操作 =============
+// ============= 列表操作 =============
 
-async function addTag() {
-  const name = prompt('请输入标签名称:');
+async function addList() {
+  const name = prompt('请输入列表名称:');
   if (!name || !name.trim()) return;
 
   // 随机颜色
   const colors = ['#4A90E2', '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22'];
   const color = colors[Math.floor(Math.random() * colors.length)];
 
-  await Storage.addTag(name.trim(), color);
+  await Storage.addList(name.trim(), color);
   await updateUI();
 }
 
-function updateTagSelect() {
-  const currentValue = DOM.detailTagSelect.value;
+function updateListSelect() {
+  const currentValue = DOM.detailListSelect.value;
 
-  DOM.detailTagSelect.innerHTML = '<option value="">无标签</option>' +
-    App.tags.map(tag => `
-      <option value="${tag.id}">${escapeHtml(tag.name)}</option>
+  DOM.detailListSelect.innerHTML = '<option value="">无列表</option>' +
+    App.lists.map(list => `
+      <option value="${list.id}">${escapeHtml(list.name)}</option>
     `).join('');
 
-  DOM.detailTagSelect.value = currentValue;
+  DOM.detailListSelect.value = currentValue;
 }
 
 // ============= 工具函数 =============
@@ -512,6 +576,21 @@ function clearSearch() {
   App.searchQuery = '';
   DOM.searchInput.value = '';
   DOM.clearSearchBtn.style.display = 'none';
+  renderTodos();
+}
+
+function toggleShowCompleted() {
+  App.showCompleted = !App.showCompleted;
+
+  // 更新按钮样式
+  if (App.showCompleted) {
+    DOM.toggleCompletedBtn.style.opacity = '1';
+    DOM.toggleCompletedBtn.style.background = '';
+  } else {
+    DOM.toggleCompletedBtn.style.opacity = '0.5';
+    DOM.toggleCompletedBtn.style.background = 'var(--bg-hover)';
+  }
+
   renderTodos();
 }
 

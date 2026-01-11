@@ -138,27 +138,44 @@ body {
   color: white;
 }
 
-/* 标签列表 */
+/* 列表/标签列表 */
 .tags-list {
   display: flex;
   flex-direction: column;
 }
 
-.tag-item {
+.tag-item,
+.list-item {
   display: flex;
   align-items: center;
   padding: 8px 20px;
   cursor: pointer;
   transition: all 0.2s;
+  position: relative;
 }
 
-.tag-item:hover {
+.tag-item:hover,
+.list-item:hover {
   background: var(--bg-hover);
 }
 
-.tag-item.active {
+.tag-item.active,
+.list-item.active {
   background: var(--bg-hover);
   color: var(--primary-color);
+}
+
+.list-toggle {
+  font-size: 10px;
+  margin-right: 4px;
+  color: var(--text-secondary);
+  width: 12px;
+  text-align: center;
+}
+
+.list-toggle-empty {
+  width: 12px;
+  margin-right: 4px;
 }
 
 .tag-color {
@@ -178,7 +195,8 @@ body {
   gap: 4px;
 }
 
-.tag-item:hover .tag-actions {
+.tag-item:hover .tag-actions,
+.list-item:hover .tag-actions {
   display: flex;
 }
 
@@ -352,6 +370,24 @@ body {
 
 .todo-item.completed {
   opacity: 0.6;
+}
+
+/* 优先级样式 */
+.priority-icon {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+.todo-item.priority-high {
+  border-left: 3px solid #E74C3C;
+}
+
+.todo-item.priority-medium {
+  border-left: 3px solid #F39C12;
+}
+
+.todo-item.priority-low {
+  border-left: 3px solid #3498DB;
 }
 
 .todo-checkbox {

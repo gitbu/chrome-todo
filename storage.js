@@ -28,9 +28,10 @@ const Storage = {
       id: Date.now().toString(),
       title: title,
       completed: false,
-      tagId: options.tagId || null,
+      listId: options.listId || null,
       dueDate: options.dueDate || null,
       notes: options.notes || '',
+      priority: options.priority || 'none', // none, low, medium, high
       subtasks: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -93,75 +94,122 @@ const Storage = {
     });
   },
 
-  // 获取按标签筛选的待办事项
-  async getTodosByTag(tagId) {
+  // 获取明天的待办事项
+  async getTomorrowTodos() {
     const todos = await this.getTodos();
-    return todos.filter(todo => todo.tagId === tagId);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    return todos.filter(todo => {
+      if (!todo.dueDate) return false;
+      const dueDate = todo.dueDate.split('T')[0];
+      return dueDate === tomorrowStr;
+    });
   },
 
-  // ============= 标签 =============
+  // 获取接下来7天的待办事项
+  async getNext7DaysTodos() {
+    const todos = await this.getTodos();
+    const today = new Date();
+    const next7Days = new Date();
+    next7Days.setDate(next7Days.getDate() + 7);
 
-  // 获取所有标签
-  async getTags() {
+    const todayStr = today.toISOString().split('T')[0];
+    const next7DaysStr = next7Days.toISOString().split('T')[0];
+
+    return todos.filter(todo => {
+      if (!todo.dueDate) return false;
+      const dueDate = todo.dueDate.split('T')[0];
+      return dueDate >= todayStr && dueDate <= next7DaysStr;
+    });
+  },
+
+  // 获取按列表筛选的待办事项
+  async getTodosByList(listId) {
+    const todos = await this.getTodos();
+    return todos.filter(todo => todo.listId === listId);
+  },
+
+  // ============= 列表/项目 =============
+
+  // 获取所有列表
+  async getLists() {
     return new Promise((resolve) => {
-      chrome.storage.local.get(['tags'], (result) => {
-        resolve(result.tags || []);
+      chrome.storage.local.get(['lists'], (result) => {
+        resolve(result.lists || []);
       });
     });
   },
 
-  // 保存所有标签
-  async saveTags(tags) {
+  // 保存所有列表
+  async saveLists(lists) {
     return new Promise((resolve) => {
-      chrome.storage.local.set({ tags }, () => {
+      chrome.storage.local.set({ lists }, () => {
         resolve();
       });
     });
   },
 
-  // 添加标签
-  async addTag(name, color = '#4A90E2') {
-    const tags = await this.getTags();
-    const newTag = {
+  // 添加列表
+  async addList(name, color = '#4A90E2', parentId = null) {
+    const lists = await this.getLists();
+    const newList = {
       id: Date.now().toString(),
       name: name,
       color: color,
+      parentId: parentId, // 支持文件夹层级
       createdAt: new Date().toISOString()
     };
-    tags.push(newTag);
-    await this.saveTags(tags);
-    return newTag;
+    lists.push(newList);
+    await this.saveLists(lists);
+    return newList;
   },
 
-  // 获取单个标签
-  async getTag(tagId) {
-    const tags = await this.getTags();
-    return tags.find(t => t.id === tagId);
+  // 获取单个列表
+  async getList(listId) {
+    const lists = await this.getLists();
+    return lists.find(l => l.id === listId);
   },
 
-  // 更新标签
-  async updateTag(tagId, updates) {
-    const tags = await this.getTags();
-    const index = tags.findIndex(t => t.id === tagId);
+  // 更新列表
+  async updateList(listId, updates) {
+    const lists = await this.getLists();
+    const index = lists.findIndex(l => l.id === listId);
     if (index !== -1) {
-      tags[index] = { ...tags[index], ...updates };
-      await this.saveTags(tags);
-      return tags[index];
+      lists[index] = { ...lists[index], ...updates };
+      await this.saveLists(lists);
+      return lists[index];
     }
     return null;
   },
 
-  // 删除标签
-  async deleteTag(tagId) {
-    const tags = await this.getTags();
-    const filteredTags = tags.filter(t => t.id !== tagId);
-    await this.saveTags(filteredTags);
+  // 删除列表（及其所有子列表）
+  async deleteList(listId) {
+    const lists = await this.getLists();
 
-    // 同时移除所有待办事项的该标签
+    // 递归查找所有子列表
+    const findChildLists = (parentId) => {
+      const children = lists.filter(l => l.parentId === parentId);
+      let allChildren = [...children];
+      children.forEach(child => {
+        allChildren = allChildren.concat(findChildLists(child.id));
+      });
+      return allChildren;
+    };
+
+    // 获取要删除的列表ID集合（包括自身和所有子列表）
+    const childLists = findChildLists(listId);
+    const idsToDelete = [listId, ...childLists.map(l => l.id)];
+
+    // 删除列表
+    const filteredLists = lists.filter(l => !idsToDelete.includes(l.id));
+    await this.saveLists(filteredLists);
+
+    // 移除所有待办事项的该列表关联
     const todos = await this.getTodos();
     todos.forEach(todo => {
-      if (todo.tagId === tagId) {
-        todo.tagId = null;
+      if (idsToDelete.includes(todo.listId)) {
+        todo.listId = null;
       }
     });
     await this.saveTodos(todos);
@@ -172,12 +220,23 @@ const Storage = {
   // 获取统计数据
   async getStats() {
     const todos = await this.getTodos();
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    const next7Days = new Date();
+    next7Days.setDate(next7Days.getDate() + 7);
+    const next7DaysStr = next7Days.toISOString().split('T')[0];
 
     let total = todos.length;
     let completed = 0;
     let pending = 0;
     let todayCount = 0;
+    let tomorrowCount = 0;
+    let next7daysCount = 0;
 
     todos.forEach(todo => {
       if (todo.completed) {
@@ -186,11 +245,20 @@ const Storage = {
         pending++;
       }
 
-      // 今天的任务
+      // 统计各个日期段的任务
       if (todo.dueDate) {
         const dueDate = todo.dueDate.split('T')[0];
-        if (dueDate === today) {
+
+        if (dueDate === todayStr) {
           todayCount++;
+        }
+
+        if (dueDate === tomorrowStr) {
+          tomorrowCount++;
+        }
+
+        if (dueDate >= todayStr && dueDate <= next7DaysStr) {
+          next7daysCount++;
         }
       }
     });
@@ -199,18 +267,20 @@ const Storage = {
       total,
       completed,
       pending,
-      today: todayCount
+      today: todayCount,
+      tomorrow: tomorrowCount,
+      next7days: next7daysCount
     };
   },
 
-  // 获取标签统计
-  async getTagStats() {
+  // 获取列表统计
+  async getListStats() {
     const todos = await this.getTodos();
-    const tags = await this.getTags();
+    const lists = await this.getLists();
 
     const stats = {};
-    tags.forEach(tag => {
-      stats[tag.id] = {
+    lists.forEach(list => {
+      stats[list.id] = {
         total: 0,
         completed: 0,
         pending: 0
@@ -218,12 +288,12 @@ const Storage = {
     });
 
     todos.forEach(todo => {
-      if (todo.tagId && stats[todo.tagId]) {
-        stats[todo.tagId].total++;
+      if (todo.listId && stats[todo.listId]) {
+        stats[todo.listId].total++;
         if (todo.completed) {
-          stats[todo.tagId].completed++;
+          stats[todo.listId].completed++;
         } else {
-          stats[todo.tagId].pending++;
+          stats[todo.listId].pending++;
         }
       }
     });
@@ -245,12 +315,12 @@ const Storage = {
   // 导出数据
   async exportData() {
     const todos = await this.getTodos();
-    const tags = await this.getTags();
+    const lists = await this.getLists();
     return {
       todos,
-      tags,
+      lists,
       exportedAt: new Date().toISOString(),
-      version: '2.0.0'
+      version: '3.0.0'
     };
   },
 
@@ -259,8 +329,8 @@ const Storage = {
     if (data.todos) {
       await this.saveTodos(data.todos);
     }
-    if (data.tags) {
-      await this.saveTags(data.tags);
+    if (data.lists) {
+      await this.saveLists(data.lists);
     }
   },
 

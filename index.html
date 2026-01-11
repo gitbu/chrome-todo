@@ -27,16 +27,26 @@
             <span class="nav-label">今天</span>
             <span class="nav-count" id="todayCount">0</span>
           </div>
+          <div class="nav-item" data-view="tomorrow">
+            <span class="nav-icon">☀️</span>
+            <span class="nav-label">明天</span>
+            <span class="nav-count" id="tomorrowCount">0</span>
+          </div>
+          <div class="nav-item" data-view="next7days">
+            <span class="nav-icon">📆</span>
+            <span class="nav-label">接下来7天</span>
+            <span class="nav-count" id="next7daysCount">0</span>
+          </div>
         </div>
 
-        <!-- 标签列表 -->
+        <!-- 列表/项目 -->
         <div class="nav-section">
           <div class="section-header">
-            <span class="section-title">标签</span>
-            <button class="icon-btn-small" id="addTagBtn" title="添加标签">+</button>
+            <span class="section-title">列表</span>
+            <button class="icon-btn-small" id="addTagBtn" title="添加列表">+</button>
           </div>
           <div id="tagsList" class="tags-list">
-            <!-- 标签动态插入 -->
+            <!-- 列表动态插入 -->
           </div>
         </div>
       </nav>
@@ -59,6 +69,9 @@
               <span>✕</span>
             </button>
           </div>
+          <button class="btn-icon" id="toggleCompletedBtn" title="显示/隐藏已完成">
+            <span>✓</span>
+          </button>
           <button class="btn-icon" id="sortBtn" title="排序">
             <span>↕️</span>
           </button>
@@ -134,12 +147,23 @@
             </label>
           </div>
 
-          <!-- 标签选择 -->
+          <!-- 列表选择 -->
           <div class="detail-section">
-            <label class="section-label">标签</label>
+            <label class="section-label">列表</label>
             <select id="detailTagSelect" class="detail-select">
-              <option value="">无标签</option>
-              <!-- 标签选项动态插入 -->
+              <option value="">无列表</option>
+              <!-- 列表选项动态插入 -->
+            </select>
+          </div>
+
+          <!-- 优先级选择 -->
+          <div class="detail-section">
+            <label class="section-label">优先级</label>
+            <select id="detailPrioritySelect" class="detail-select">
+              <option value="none">无</option>
+              <option value="low">🔵 低</option>
+              <option value="medium">🟡 中</option>
+              <option value="high">🔴 高</option>
             </select>
           </div>
 
