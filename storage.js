@@ -31,6 +31,7 @@ const Storage = {
       tagId: options.tagId || null,
       dueDate: options.dueDate || null,
       notes: options.notes || '',
+      subtasks: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -261,5 +262,77 @@ const Storage = {
     if (data.tags) {
       await this.saveTags(data.tags);
     }
+  },
+
+  // ============= 子任务管理 =============
+
+  // 添加子任务
+  async addSubtask(todoId, title) {
+    const todos = await this.getTodos();
+    const todo = todos.find(t => t.id === todoId);
+    if (todo) {
+      if (!todo.subtasks) {
+        todo.subtasks = [];
+      }
+      const newSubtask = {
+        id: Date.now().toString(),
+        title: title,
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+      todo.subtasks.push(newSubtask);
+      todo.updatedAt = new Date().toISOString();
+      await this.saveTodos(todos);
+      return newSubtask;
+    }
+    return null;
+  },
+
+  // 更新子任务
+  async updateSubtask(todoId, subtaskId, updates) {
+    const todos = await this.getTodos();
+    const todo = todos.find(t => t.id === todoId);
+    if (todo && todo.subtasks) {
+      const subtaskIndex = todo.subtasks.findIndex(s => s.id === subtaskId);
+      if (subtaskIndex !== -1) {
+        todo.subtasks[subtaskIndex] = {
+          ...todo.subtasks[subtaskIndex],
+          ...updates
+        };
+        todo.updatedAt = new Date().toISOString();
+        await this.saveTodos(todos);
+        return todo.subtasks[subtaskIndex];
+      }
+    }
+    return null;
+  },
+
+  // 切换子任务完成状态
+  async toggleSubtask(todoId, subtaskId) {
+    const todos = await this.getTodos();
+    const todo = todos.find(t => t.id === todoId);
+    if (todo && todo.subtasks) {
+      const subtask = todo.subtasks.find(s => s.id === subtaskId);
+      if (subtask) {
+        subtask.completed = !subtask.completed;
+        todo.updatedAt = new Date().toISOString();
+        await this.saveTodos(todos);
+        return subtask;
+      }
+    }
+    return null;
+  },
+
+  // 删除子任务
+  async deleteSubtask(todoId, subtaskId) {
+    const todos = await this.getTodos();
+    const todo = todos.find(t => t.id === todoId);
+    if (todo && todo.subtasks) {
+      todo.subtasks = todo.subtasks.filter(s => s.id !== subtaskId);
+      todo.updatedAt = new Date().toISOString();
+      await this.saveTodos(todos);
+      return true;
+    }
+    return false;
   }
 };

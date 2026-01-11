@@ -49,7 +49,12 @@ const DOM = {
   detailDateInput: document.getElementById('detailDateInput'),
   detailNotesInput: document.getElementById('detailNotesInput'),
   closeDetailBtn: document.getElementById('closeDetailBtn'),
-  deleteTodoBtn: document.getElementById('deleteTodoBtn')
+  deleteTodoBtn: document.getElementById('deleteTodoBtn'),
+
+  // 子任务
+  subtasksList: document.getElementById('subtasksList'),
+  newSubtaskInput: document.getElementById('newSubtaskInput'),
+  addSubtaskBtn: document.getElementById('addSubtaskBtn')
 };
 
 // ============= 初始化 =============
@@ -99,6 +104,12 @@ function setupEventListeners() {
   // 搜索功能
   DOM.searchInput.addEventListener('input', handleSearch);
   DOM.clearSearchBtn.addEventListener('click', clearSearch);
+
+  // 子任务
+  DOM.addSubtaskBtn.addEventListener('click', addSubtask);
+  DOM.newSubtaskInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') addSubtask();
+  });
 }
 
 // ============= 视图切换 =============
@@ -259,6 +270,18 @@ async function renderTodos() {
     const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date() && !todo.completed;
     const isActive = App.selectedTodoId === todo.id;
 
+    // 计算子任务进度
+    let subtaskProgress = '';
+    if (todo.subtasks && todo.subtasks.length > 0) {
+      const completedCount = todo.subtasks.filter(s => s.completed).length;
+      const totalCount = todo.subtasks.length;
+      subtaskProgress = `
+        <span class="subtask-progress">
+          ☑️ ${completedCount}/${totalCount}
+        </span>
+      `;
+    }
+
     return `
       <div class="todo-item ${todo.completed ? 'completed' : ''} ${isActive ? 'active' : ''}" data-id="${todo.id}">
         <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''}>
@@ -276,6 +299,7 @@ async function renderTodos() {
                 📅 ${formatDate(todo.dueDate)}
               </span>
             ` : ''}
+            ${subtaskProgress}
           </div>
         </div>
       </div>
@@ -374,6 +398,9 @@ async function openDetailPanel(todoId) {
   DOM.detailDateInput.value = todo.dueDate || '';
   DOM.detailNotesInput.value = todo.notes || '';
 
+  // 渲染子任务
+  renderSubtasks(todo);
+
   // 显示详情面板
   document.querySelector('.detail-empty').classList.add('hidden');
   DOM.detailForm.classList.remove('hidden');
@@ -468,6 +495,78 @@ function clearSearch() {
   DOM.searchInput.value = '';
   DOM.clearSearchBtn.style.display = 'none';
   renderTodos();
+}
+
+// ============= 子任务管理 =============
+
+function renderSubtasks(todo) {
+  if (!todo.subtasks || todo.subtasks.length === 0) {
+    DOM.subtasksList.innerHTML = '<div style="font-size: 13px; color: var(--text-secondary); padding: 8px;">暂无子任务</div>';
+    return;
+  }
+
+  DOM.subtasksList.innerHTML = todo.subtasks.map(subtask => `
+    <div class="subtask-item ${subtask.completed ? 'completed' : ''}" data-id="${subtask.id}">
+      <input type="checkbox" class="subtask-checkbox" ${subtask.completed ? 'checked' : ''}>
+      <span class="subtask-text">${escapeHtml(subtask.title)}</span>
+      <div class="subtask-actions">
+        <button class="icon-btn-tiny edit-subtask" title="编辑">✏️</button>
+        <button class="icon-btn-tiny delete-subtask" title="删除">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+
+  // 绑定事件
+  DOM.subtasksList.querySelectorAll('.subtask-item').forEach(item => {
+    const subtaskId = item.dataset.id;
+
+    // 切换完成状态
+    const checkbox = item.querySelector('.subtask-checkbox');
+    checkbox.addEventListener('change', async () => {
+      await Storage.toggleSubtask(App.selectedTodoId, subtaskId);
+      const todo = await Storage.getTodo(App.selectedTodoId);
+      renderSubtasks(todo);
+      await updateUI();
+    });
+
+    // 编辑子任务
+    const editBtn = item.querySelector('.edit-subtask');
+    editBtn.addEventListener('click', async () => {
+      const todo = await Storage.getTodo(App.selectedTodoId);
+      const subtask = todo.subtasks.find(s => s.id === subtaskId);
+      const newTitle = prompt('编辑子任务:', subtask.title);
+      if (newTitle && newTitle.trim()) {
+        await Storage.updateSubtask(App.selectedTodoId, subtaskId, { title: newTitle.trim() });
+        const updatedTodo = await Storage.getTodo(App.selectedTodoId);
+        renderSubtasks(updatedTodo);
+      }
+    });
+
+    // 删除子任务
+    const deleteBtn = item.querySelector('.delete-subtask');
+    deleteBtn.addEventListener('click', async () => {
+      if (confirm('确定要删除这个子任务吗？')) {
+        await Storage.deleteSubtask(App.selectedTodoId, subtaskId);
+        const todo = await Storage.getTodo(App.selectedTodoId);
+        renderSubtasks(todo);
+        await updateUI();
+      }
+    });
+  });
+}
+
+async function addSubtask() {
+  if (!App.selectedTodoId) return;
+
+  const title = DOM.newSubtaskInput.value.trim();
+  if (!title) return;
+
+  await Storage.addSubtask(App.selectedTodoId, title);
+  DOM.newSubtaskInput.value = '';
+
+  const todo = await Storage.getTodo(App.selectedTodoId);
+  renderSubtasks(todo);
+  await updateUI();
 }
 
 // ============= 启动应用 =============

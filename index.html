@@ -160,6 +160,23 @@
             ></textarea>
           </div>
 
+          <!-- 子任务 -->
+          <div class="detail-section">
+            <label class="section-label">子任务</label>
+            <div class="subtasks-list" id="subtasksList">
+              <!-- 子任务动态插入 -->
+            </div>
+            <div class="add-subtask-form">
+              <input
+                type="text"
+                id="newSubtaskInput"
+                class="add-subtask-input"
+                placeholder="添加子任务..."
+              >
+              <button class="btn-add-subtask" id="addSubtaskBtn">+</button>
+            </div>
+          </div>
+
           <!-- 操作按钮 -->
           <div class="detail-actions">
             <button class="btn-danger" id="deleteTodoBtn">删除待办</button>
