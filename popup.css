@@ -1,0 +1,485 @@
+/* TickTick Chrome Extension Popup 样式 */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* TickTick 配色方案 */
+  --tt-primary: #4A90E2;
+  --tt-primary-hover: #3A7BC8;
+  --tt-text-primary: #2C3E50;
+  --tt-text-secondary: #5F6368;
+  --tt-text-tertiary: #9AA0A6;
+  --tt-bg-white: #FFFFFF;
+  --tt-bg-gray: #F7F9FA;
+  --tt-bg-hover: #F0F2F5;
+  --tt-border: #DADCE0;
+  --tt-divider: #E8EAED;
+  --tt-completed: #5F6368;
+  --tt-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --tt-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body {
+  width: 400px;
+  max-height: 600px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  color: var(--tt-text-primary);
+  background: var(--tt-bg-white);
+  overflow: hidden;
+}
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 600px;
+}
+
+/* 快速添加区域 */
+.quick-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--tt-divider);
+  background: var(--tt-bg-white);
+}
+
+.quick-add-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--tt-border);
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--tt-text-primary);
+  transition: all 0.15s ease;
+}
+
+.quick-add-input:focus {
+  outline: none;
+  border-color: var(--tt-primary);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.quick-add-input::placeholder {
+  color: var(--tt-text-tertiary);
+}
+
+.quick-add-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tt-primary);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  transition: background 0.15s ease;
+}
+
+.quick-add-btn:hover {
+  background: var(--tt-primary-hover);
+}
+
+/* 智能列表 */
+.smart-lists {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--tt-divider);
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.list-item:hover {
+  background: var(--tt-bg-hover);
+}
+
+.list-item.active {
+  background: rgba(74, 144, 226, 0.08);
+  border-left: 3px solid var(--tt-primary);
+  padding-left: 13px;
+}
+
+.list-icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+
+.list-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--tt-text-primary);
+}
+
+.list-count {
+  font-size: 12px;
+  color: var(--tt-text-tertiary);
+  background: var(--tt-bg-gray);
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.list-item.active .list-count {
+  background: rgba(74, 144, 226, 0.15);
+  color: var(--tt-primary);
+}
+
+/* 分隔线 */
+.divider {
+  height: 1px;
+  background: var(--tt-divider);
+  margin: 4px 0;
+}
+
+/* 自定义列表 */
+.custom-lists {
+  padding: 8px 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.lists-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  margin-bottom: 4px;
+}
+
+.lists-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tt-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.add-list-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--tt-text-tertiary);
+  transition: all 0.15s ease;
+}
+
+.add-list-btn:hover {
+  background: var(--tt-bg-hover);
+  color: var(--tt-primary);
+}
+
+.lists-container {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 任务列表区域 */
+.tasks-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-top: 1px solid var(--tt-divider);
+}
+
+.tasks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--tt-divider);
+  background: var(--tt-bg-white);
+}
+
+.tasks-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tt-text-primary);
+}
+
+.tasks-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.task-action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--tt-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.task-action-btn:hover {
+  background: var(--tt-bg-hover);
+  color: var(--tt-text-primary);
+}
+
+/* 任务列表 */
+.tasks-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.task-item:hover {
+  background: var(--tt-bg-hover);
+}
+
+.task-item.completed .task-content {
+  opacity: 0.6;
+}
+
+.task-item.completed .task-title {
+  text-decoration: line-through;
+  color: var(--tt-completed);
+}
+
+.task-checkbox {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--tt-border);
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.task-checkbox:hover {
+  border-color: var(--tt-primary);
+}
+
+.task-checkbox.checked {
+  background: var(--tt-primary);
+  border-color: var(--tt-primary);
+}
+
+.task-checkbox.checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  font-size: 13px;
+  color: var(--tt-text-primary);
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--tt-text-tertiary);
+}
+
+.task-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.task-priority {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.task-priority.high {
+  background: #E74C3C;
+}
+
+.task-priority.medium {
+  background: #F39C12;
+}
+
+.task-priority.low {
+  background: #3498DB;
+}
+
+/* 已完成任务区域 */
+.completed-section {
+  border-top: 1px solid var(--tt-divider);
+  background: var(--tt-bg-gray);
+}
+
+.completed-section.hidden {
+  display: none;
+}
+
+.completed-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
+.completed-header:hover {
+  background: var(--tt-bg-hover);
+}
+
+.completed-toggle {
+  font-size: 10px;
+  color: var(--tt-text-tertiary);
+  transition: transform 0.15s ease;
+}
+
+.completed-toggle.expanded {
+  transform: rotate(90deg);
+}
+
+.completed-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tt-text-secondary);
+}
+
+.completed-count {
+  font-size: 12px;
+  color: var(--tt-text-tertiary);
+}
+
+.completed-tasks {
+  padding: 0;
+}
+
+.completed-tasks.hidden {
+  display: none;
+}
+
+/* 底部操作栏 */
+.footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px;
+  border-top: 1px solid var(--tt-divider);
+  background: var(--tt-bg-white);
+}
+
+.footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--tt-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.footer-btn:hover {
+  background: var(--tt-bg-hover);
+  color: var(--tt-text-primary);
+}
+
+.footer-btn span:first-child {
+  font-size: 14px;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--tt-text-tertiary);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 13px;
+  text-align: center;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--tt-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tt-text-tertiary);
+}
+
+/* 工具类 */
+.hidden {
+  display: none !important;
+}

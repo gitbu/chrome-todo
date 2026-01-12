@@ -4,77 +4,110 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Todo Manager</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <!-- 头部统计区域 -->
-    <div class="header">
-      <h1>📝 待办事项</h1>
-      <div class="stats">
-        <div class="stat-item">
-          <span class="stat-number" id="totalTodos">0</span>
-          <span class="stat-label">总任务</span>
+  <div class="popup-container">
+    <!-- 快速添加输入框 -->
+    <div class="quick-add">
+      <input
+        type="text"
+        id="quickAddInput"
+        class="quick-add-input"
+        placeholder="添加任务..."
+      >
+      <button class="quick-add-btn" id="quickAddBtn">
+        <span>+</span>
+      </button>
+    </div>
+
+    <!-- 智能列表导航 -->
+    <div class="smart-lists">
+      <div class="list-item active" data-view="inbox">
+        <span class="list-icon">📥</span>
+        <span class="list-name">收集箱</span>
+        <span class="list-count" id="inboxCount">0</span>
+      </div>
+      <div class="list-item" data-view="today">
+        <span class="list-icon">📅</span>
+        <span class="list-name">今天</span>
+        <span class="list-count" id="todayCount">0</span>
+      </div>
+      <div class="list-item" data-view="tomorrow">
+        <span class="list-icon">☀️</span>
+        <span class="list-name">明天</span>
+        <span class="list-count" id="tomorrowCount">0</span>
+      </div>
+      <div class="list-item" data-view="next7days">
+        <span class="list-icon">📆</span>
+        <span class="list-name">接下来7天</span>
+        <span class="list-count" id="next7daysCount">0</span>
+      </div>
+    </div>
+
+    <!-- 分隔线 -->
+    <div class="divider"></div>
+
+    <!-- 自定义列表 -->
+    <div class="custom-lists">
+      <div class="lists-header">
+        <span class="lists-title">列表</span>
+        <button class="add-list-btn" id="addListBtn" title="添加列表">+</button>
+      </div>
+      <div class="lists-container" id="listsContainer">
+        <!-- 列表动态插入 -->
+      </div>
+    </div>
+
+    <!-- 分隔线 -->
+    <div class="divider"></div>
+
+    <!-- 任务列表区域 -->
+    <div class="tasks-section">
+      <div class="tasks-header">
+        <h3 class="tasks-title" id="tasksTitle">收集箱</h3>
+        <div class="tasks-actions">
+          <button class="task-action-btn" id="sortBtn" title="排序">
+            <span>↕️</span>
+          </button>
+          <button class="task-action-btn" id="moreBtn" title="更多">
+            <span>⋯</span>
+          </button>
         </div>
-        <div class="stat-item">
-          <span class="stat-number pending" id="pendingTodos">0</span>
-          <span class="stat-label">未完成</span>
+      </div>
+
+      <!-- 任务列表 -->
+      <div class="tasks-list" id="tasksList">
+        <!-- 任务动态插入 -->
+      </div>
+
+      <!-- 已完成任务折叠区 -->
+      <div class="completed-section hidden" id="completedSection">
+        <div class="completed-header" id="completedHeader">
+          <span class="completed-toggle">▶</span>
+          <span class="completed-title">已完成</span>
+          <span class="completed-count" id="completedCountLabel">0</span>
         </div>
-        <div class="stat-item">
-          <span class="stat-number completed" id="completedTodos">0</span>
-          <span class="stat-label">已完成</span>
+        <div class="completed-tasks hidden" id="completedTasks">
+          <!-- 已完成任务动态插入 -->
         </div>
       </div>
     </div>
 
-    <!-- 视图切换按钮 -->
-    <div class="view-toggle">
-      <button class="toggle-btn active" data-view="projects">项目视图</button>
-      <button class="toggle-btn" data-view="all">全部任务</button>
-    </div>
-
-    <!-- 项目视图 -->
-    <div class="view" id="projectsView">
-      <!-- 添加项目表单 -->
-      <div class="add-form">
-        <input type="text" id="newProjectInput" placeholder="输入项目名称...">
-        <button id="addProjectBtn">+ 添加项目</button>
-      </div>
-
-      <!-- 项目列表 -->
-      <div class="projects-list" id="projectsList"></div>
-    </div>
-
-    <!-- 全部任务视图 -->
-    <div class="view hidden" id="allTodosView">
-      <div class="todos-list" id="allTodosList"></div>
-    </div>
-
-    <!-- 项目详情模态框 -->
-    <div class="modal hidden" id="projectModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="modalProjectName"></h2>
-          <div class="modal-actions">
-            <button class="icon-btn" id="editProjectBtn" title="编辑项目">✏️</button>
-            <button class="icon-btn" id="deleteProjectBtn" title="删除项目">🗑️</button>
-            <button class="icon-btn" id="closeModalBtn" title="关闭">✖️</button>
-          </div>
-        </div>
-
-        <!-- 添加待办事项表单 -->
-        <div class="add-form">
-          <input type="text" id="newTodoInput" placeholder="输入待办事项...">
-          <button id="addTodoBtn">+ 添加</button>
-        </div>
-
-        <!-- 待办事项列表 -->
-        <div class="todos-list" id="todosList"></div>
-      </div>
+    <!-- 底部操作栏 -->
+    <div class="footer-actions">
+      <button class="footer-btn" id="openFullBtn" title="打开完整页面">
+        <span>🔗</span>
+        <span>完整页面</span>
+      </button>
+      <button class="footer-btn" id="settingsBtn" title="设置">
+        <span>⚙️</span>
+        <span>设置</span>
+      </button>
     </div>
   </div>
 
   <script src="storage.js"></script>
-  <script src="popup.js"></script>
+  <script src="popup-app.js"></script>
 </body>
 </html>
